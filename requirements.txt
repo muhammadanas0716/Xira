@@ -6,4 +6,5 @@ yfinance
 PyPDF2
 pdfplumber
 openai
+polygon-api-client
 

@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template, send_from_directory, Response, make_response
 import os
+from flask import Blueprint, render_template, send_from_directory, Response, make_response
 from app.utils.config import Config
 
 main_bp = Blueprint('main', __name__)

@@ -813,10 +813,18 @@
 
         async function loadPdfFromUrl(url) {
             console.log('Loading PDF from URL:', url);
-            document.getElementById('pdfPlaceholder').classList.add('hidden');
-            document.getElementById('pdfLoading').classList.remove('hidden');
-            document.getElementById('pdfViewer').classList.add('hidden');
-            document.getElementById('pdfControls').classList.add('hidden');
+            const pdfPlaceholder = document.getElementById('pdfPlaceholder');
+            const pdfLoading = document.getElementById('pdfLoading');
+            const pdfViewer = document.getElementById('pdfViewer');
+            const pdfControls = document.getElementById('pdfControls');
+            const pdfContainer = document.getElementById('pdfContainer');
+            
+            pdfPlaceholder.classList.add('hidden');
+            pdfLoading.classList.remove('hidden');
+            pdfViewer.classList.add('hidden');
+            pdfControls.classList.add('hidden');
+            pdfViewer.style.display = 'none';
+            pdfViewer.innerHTML = '';
 
             try {
                 console.log('Fetching PDF as blob...');
@@ -824,8 +832,8 @@
                 if (!response.ok) {
                     if (response.status === 404) {
                         console.warn('PDF file not found:', url);
-                        document.getElementById('pdfLoading').classList.add('hidden');
-                        document.getElementById('pdfPlaceholder').classList.remove('hidden');
+                        pdfLoading.classList.add('hidden');
+                        pdfPlaceholder.classList.remove('hidden');
                         showError('PDF file not found. The file may not have been downloaded yet.');
                         return;
                     }
@@ -834,6 +842,10 @@
                 console.log('PDF fetched, converting to array buffer...');
                 const arrayBuffer = await response.arrayBuffer();
                 console.log('Array buffer size:', arrayBuffer.byteLength);
+                
+                if (arrayBuffer.byteLength === 0) {
+                    throw new Error('PDF file is empty');
+                }
                 
                 const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
                 const pdf = await loadingTask.promise;
@@ -846,22 +858,24 @@
                 await renderAllPages();
                 
                 console.log('All pages rendered');
-                const pdfViewer = document.getElementById('pdfViewer');
-                const pdfLoading = document.getElementById('pdfLoading');
-                const pdfControls = document.getElementById('pdfControls');
                 
                 pdfLoading.classList.add('hidden');
+                pdfPlaceholder.classList.add('hidden');
                 pdfViewer.classList.remove('hidden');
                 pdfViewer.style.display = 'flex';
                 pdfControls.classList.remove('hidden');
+                
+                pdfContainer.scrollTop = 0;
                 
                 console.log('PDF viewer visible:', !pdfViewer.classList.contains('hidden'));
                 console.log('PDF viewer children:', pdfViewer.children.length);
                 console.log('PDF viewer style display:', pdfViewer.style.display);
             } catch (error) {
                 console.error('Error loading PDF:', error);
-                document.getElementById('pdfLoading').classList.add('hidden');
-                document.getElementById('pdfPlaceholder').classList.remove('hidden');
+                pdfLoading.classList.add('hidden');
+                pdfViewer.classList.add('hidden');
+                pdfViewer.style.display = 'none';
+                pdfPlaceholder.classList.remove('hidden');
                 showError('Failed to load PDF: ' + error.message);
             }
         }
@@ -878,29 +892,8 @@
             searchBtn.disabled = true;
             searchBtn.textContent = 'Loading...';
 
-            const filename = `${ticker}_latest_10Q.pdf`;
-            const filepath = `/pdfs/${filename}`;
-
             try {
-                const response = await fetch(filepath, { method: 'HEAD' });
-                if (response.ok) {
-                    loadPdfFromUrl(filepath);
-                    showSuccess('PDF loaded successfully');
-                } else {
-                    const downloadResponse = await fetch('/api/download-pdf', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ticker: ticker })
-                    });
-
-                    const data = await downloadResponse.json();
-                    if (downloadResponse.ok) {
-                        loadPdfFromUrl(`/pdfs/${data.filename}`);
-                        showSuccess(data.message || 'PDF downloaded and loaded');
-                    } else {
-                        showError(data.error || 'Failed to download PDF');
-                    }
-                }
+                showError('PDF viewing is not available.');
             } catch (error) {
                 console.error('Error:', error);
                 showError('An error occurred. Please try again.');
@@ -1054,7 +1047,9 @@
                     closeNewChatModal();
                     loadChatHistory();
                     if (data.pdf_filename) {
-                        loadPdfFromUrl(`/pdfs/${data.pdf_filename}`);
+                        setTimeout(() => {
+                            loadPdfFromUrl(`/pdfs/${data.pdf_filename}`);
+                        }, 500);
                     }
                 } else {
                     alert(data.error || 'Failed to create chat');
@@ -1081,7 +1076,9 @@
                     }
                     displayChat(chat);
                     if (chat.pdf_filename) {
-                        loadPdfFromUrl(`/pdfs/${chat.pdf_filename}`);
+                        setTimeout(() => {
+                            loadPdfFromUrl(`/pdfs/${chat.pdf_filename}`);
+                        }, 100);
                     }
                 }
             } catch (error) {
@@ -1102,6 +1099,7 @@
                             <div class="bg-white p-4 rounded-xl border border-gray-200">
                                 <div class="text-xs text-gray-500 mb-1">Current Price</div>
                                 <div class="text-xl font-bold text-gray-900">$${stockInfo.currentPrice?.toFixed(2) || 'N/A'}</div>
+                                ${stockInfo.prevClose ? `<div class="text-xs mt-1 ${stockInfo.currentPrice > stockInfo.prevClose ? 'text-green-600' : stockInfo.currentPrice < stockInfo.prevClose ? 'text-red-600' : 'text-gray-500'}">${stockInfo.currentPrice > stockInfo.prevClose ? '↑' : stockInfo.currentPrice < stockInfo.prevClose ? '↓' : '→'} ${Math.abs(((stockInfo.currentPrice - stockInfo.prevClose) / stockInfo.prevClose) * 100).toFixed(2)}%</div>` : ''}
                             </div>
                             <div class="bg-white p-4 rounded-xl border border-gray-200">
                                 <div class="text-xs text-gray-500 mb-1">P/E Ratio</div>
@@ -1109,12 +1107,128 @@
                             </div>
                             <div class="bg-white p-4 rounded-xl border border-gray-200">
                                 <div class="text-xs text-gray-500 mb-1">Market Cap</div>
-                                <div class="text-xl font-bold text-gray-900">${stockInfo.marketCap ? (stockInfo.marketCap / 1e9).toFixed(2) + 'B' : 'N/A'}</div>
+                                <div class="text-xl font-bold text-gray-900">${stockInfo.marketCap ? (stockInfo.marketCap >= 1e12 ? (stockInfo.marketCap / 1e12).toFixed(2) + 'T' : (stockInfo.marketCap / 1e9).toFixed(2) + 'B') : 'N/A'}</div>
                             </div>
                             <div class="bg-white p-4 rounded-xl border border-gray-200">
                                 <div class="text-xs text-gray-500 mb-1">Sector</div>
                                 <div class="text-lg font-semibold text-gray-900">${stockInfo.sector || 'N/A'}</div>
                             </div>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-4">
+                            ${stockInfo.open ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">Open</div>
+                                <div class="text-lg font-bold text-gray-900">$${stockInfo.open.toFixed(2)}</div>
+                            </div>
+                            ` : ''}
+                            ${stockInfo.high ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">High</div>
+                                <div class="text-lg font-bold text-green-600">$${stockInfo.high.toFixed(2)}</div>
+                            </div>
+                            ` : ''}
+                            ${stockInfo.low ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">Low</div>
+                                <div class="text-lg font-bold text-red-600">$${stockInfo.low.toFixed(2)}</div>
+                            </div>
+                            ` : ''}
+                            ${stockInfo.volume ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">Volume</div>
+                                <div class="text-lg font-bold text-gray-900">${stockInfo.volume >= 1e9 ? (stockInfo.volume / 1e9).toFixed(2) + 'B' : stockInfo.volume >= 1e6 ? (stockInfo.volume / 1e6).toFixed(2) + 'M' : stockInfo.volume.toLocaleString()}</div>
+                            </div>
+                            ` : ''}
+                            ${stockInfo.eps ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">EPS</div>
+                                <div class="text-lg font-bold text-gray-900">$${stockInfo.eps.toFixed(2)}</div>
+                            </div>
+                            ` : ''}
+                            ${stockInfo.beta ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">Beta</div>
+                                <div class="text-lg font-bold text-gray-900">${stockInfo.beta.toFixed(2)}</div>
+                            </div>
+                            ` : ''}
+                            ${stockInfo.dividendYield ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">Dividend Yield</div>
+                                <div class="text-lg font-bold text-gray-900">${(stockInfo.dividendYield * 100).toFixed(2)}%</div>
+                            </div>
+                            ` : ''}
+                            ${stockInfo.profitMargin ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">Profit Margin</div>
+                                <div class="text-lg font-bold text-gray-900">${(stockInfo.profitMargin * 100).toFixed(2)}%</div>
+                            </div>
+                            ` : ''}
+                            ${stockInfo.roe ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">ROE</div>
+                                <div class="text-lg font-bold text-gray-900">${(stockInfo.roe * 100).toFixed(2)}%</div>
+                            </div>
+                            ` : ''}
+                            ${stockInfo.roa ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">ROA</div>
+                                <div class="text-lg font-bold text-gray-900">${(stockInfo.roa * 100).toFixed(2)}%</div>
+                            </div>
+                            ` : ''}
+                            ${stockInfo.priceToBook ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">P/B Ratio</div>
+                                <div class="text-lg font-bold text-gray-900">${stockInfo.priceToBook.toFixed(2)}</div>
+                            </div>
+                            ` : ''}
+                            ${stockInfo.priceToSales ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">P/S Ratio</div>
+                                <div class="text-lg font-bold text-gray-900">${stockInfo.priceToSales.toFixed(2)}</div>
+                            </div>
+                            ` : ''}
+                            ${stockInfo.debtToEquity ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">Debt/Equity</div>
+                                <div class="text-lg font-bold text-gray-900">${stockInfo.debtToEquity.toFixed(2)}</div>
+                            </div>
+                            ` : ''}
+                            ${stockInfo.currentRatio ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">Current Ratio</div>
+                                <div class="text-lg font-bold text-gray-900">${stockInfo.currentRatio.toFixed(2)}</div>
+                            </div>
+                            ` : ''}
+                            ${stockInfo['52WeekHigh'] ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">52W High</div>
+                                <div class="text-lg font-bold text-green-600">$${stockInfo['52WeekHigh'].toFixed(2)}</div>
+                            </div>
+                            ` : ''}
+                            ${stockInfo['52WeekLow'] ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">52W Low</div>
+                                <div class="text-lg font-bold text-red-600">$${stockInfo['52WeekLow'].toFixed(2)}</div>
+                            </div>
+                            ` : ''}
+                            ${stockInfo.revenue ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">Revenue</div>
+                                <div class="text-lg font-bold text-gray-900">${stockInfo.revenue >= 1e12 ? (stockInfo.revenue / 1e12).toFixed(2) + 'T' : (stockInfo.revenue / 1e9).toFixed(2) + 'B'}</div>
+                            </div>
+                            ` : ''}
+                            ${stockInfo.enterpriseValue ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">Enterprise Value</div>
+                                <div class="text-lg font-bold text-gray-900">${stockInfo.enterpriseValue >= 1e12 ? (stockInfo.enterpriseValue / 1e12).toFixed(2) + 'T' : (stockInfo.enterpriseValue / 1e9).toFixed(2) + 'B'}</div>
+                            </div>
+                            ` : ''}
+                            ${stockInfo.sharesOutstanding ? `
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">Shares Outstanding</div>
+                                <div class="text-lg font-bold text-gray-900">${stockInfo.sharesOutstanding >= 1e9 ? (stockInfo.sharesOutstanding / 1e9).toFixed(2) + 'B' : (stockInfo.sharesOutstanding / 1e6).toFixed(2) + 'M'}</div>
+                            </div>
+                            ` : ''}
                         </div>
                         <div class="mt-6 flex gap-3">
                             <button onclick="generateReport()" id="generateReportBtn"

@@ -1,20 +1,13 @@
-from flask import Blueprint, jsonify, request
 import os
+from flask import Blueprint, jsonify, request
 from app.models.chat import Chat, chats
-from app.services.sec_service import sec_service
 from app.services.stock_service import stock_service
+from app.services.sec_service import sec_service
 from app.services.pdf_service import pdf_service
 from app.services.llm_service import llm_service
 from app.utils.config import Config
 
 api_bp = Blueprint('api', __name__)
-
-@api_bp.route('/pdfs', methods=['GET'])
-def list_pdfs():
-    pdfs = []
-    if os.path.exists(Config.DOWNLOADS_DIR):
-        pdfs = [f for f in os.listdir(Config.DOWNLOADS_DIR) if f.endswith('.pdf')]
-    return jsonify(pdfs)
 
 @api_bp.route('/create-chat', methods=['POST'])
 def create_chat():
@@ -28,10 +21,10 @@ def create_chat():
     if not stock_info:
         return jsonify({'error': f'Failed to fetch stock information for {ticker}'}), 400
     
+    pdf_text = None
     filename = f"{ticker}_latest_10Q.pdf"
     filepath = os.path.join(Config.DOWNLOADS_DIR, filename)
     
-    pdf_text = None
     if os.path.exists(filepath):
         print(f"PDF exists, extracting text from: {filename}")
         pdf_text = pdf_service.extract_text(filename)
@@ -44,6 +37,8 @@ def create_chat():
                 if result:
                     print(f"PDF downloaded, extracting text from: {result}")
                     pdf_text = pdf_service.extract_text(result)
+                else:
+                    print(f"Failed to download PDF for {ticker}")
             else:
                 print(f"No filing URL found for {ticker}")
         else:
@@ -120,7 +115,7 @@ def ask_question(chat_id):
     chat = chats[chat_id]
     
     if not chat.pdf_text:
-        return jsonify({'error': 'PDF text not available for this ticker. Please ensure the PDF was downloaded and extracted properly.'}), 400
+        return jsonify({'error': 'PDF text not available for this ticker.'}), 400
     
     if not llm_service.client:
         return jsonify({'error': 'OpenAI API key not configured'}), 500
@@ -139,33 +134,6 @@ def ask_question(chat_id):
     message = chat.add_message(question, answer)
     return jsonify(message)
 
-@api_bp.route('/download-pdf', methods=['POST'])
-def download_pdf_api():
-    data = request.get_json()
-    ticker = data.get('ticker', '').strip().upper()
-    
-    if not ticker:
-        return jsonify({'error': 'Ticker is required'}), 400
-    
-    filename = f"{ticker}_latest_10Q.pdf"
-    filepath = os.path.join(Config.DOWNLOADS_DIR, filename)
-    
-    if os.path.exists(filepath):
-        return jsonify({'filename': filename, 'message': 'PDF already exists'})
-    
-    if not Config.SEC_API_KEY:
-        return jsonify({'error': 'API key not configured'}), 500
-    
-    filing_url = sec_service.get_latest_10q_url(ticker)
-    if not filing_url:
-        return jsonify({'error': f'No 10-Q filings found for ticker {ticker}'}), 404
-    
-    result = sec_service.download_pdf(filing_url, ticker)
-    if result:
-        return jsonify({'filename': result, 'message': 'PDF downloaded successfully'})
-    else:
-        return jsonify({'error': 'Failed to download PDF'}), 500
-
 @api_bp.route('/chats/<chat_id>/generate-report', methods=['POST'])
 def generate_report(chat_id):
     if chat_id not in chats:
@@ -174,7 +142,7 @@ def generate_report(chat_id):
     chat = chats[chat_id]
     
     if not chat.pdf_text:
-        return jsonify({'error': 'PDF text not available for this ticker. Please ensure the PDF was downloaded and extracted properly.'}), 400
+        return jsonify({'error': 'PDF text not available for this ticker.'}), 400
     
     if not llm_service.client:
         return jsonify({'error': 'OpenAI API key not configured'}), 500

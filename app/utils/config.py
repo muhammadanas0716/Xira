@@ -10,6 +10,7 @@ class Config:
     DOWNLOADS_DIR = os.path.abspath(os.path.join(BASE_DIR, os.getenv('DOWNLOADS_DIR', 'downloads')))
     SEC_API_KEY = os.getenv('SEC_API_KEY')
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+    POLYGON_API_KEY = os.getenv('POLYGON_API_KEY')
     
     @staticmethod
     def init_app(app):
