@@ -77,11 +77,11 @@
             background: white;
             display: block;
         }
-        
+
         .hidden {
             display: none !important;
         }
-        
+
         #pdfViewer {
             display: flex;
             flex-direction: column;
@@ -89,14 +89,14 @@
             padding: 20px;
             min-height: 100%;
         }
-        
+
         #pdfViewer.hidden {
             display: none !important;
         }
 
         .loading-spinner {
             border: 3px solid #f3f4f6;
-            border-top: 3px solid #3b82f6;
+            border-top: 3px solid #000000;
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -136,7 +136,7 @@
         }
 
         .history-item:hover {
-            background-color: rgba(59, 130, 246, 0.1);
+            background-color: rgba(0, 0, 0, 0.05);
             transform: translateX(4px);
         }
 
@@ -168,7 +168,7 @@
         }
 
         .resize-handle:hover {
-            background: #3b82f6;
+            background: #000000;
         }
 
         .resize-handle::before {
@@ -184,7 +184,7 @@
         }
 
         .resize-handle:hover::before {
-            background: #3b82f6;
+            background: #000000;
         }
 
         .resizing {
@@ -321,7 +321,7 @@
         }
 
         .markdown-content blockquote {
-            border-left: 4px solid #3b82f6;
+            border-left: 4px solid #000000;
             padding-left: 1rem;
             margin-left: 0;
             margin-bottom: 1em;
@@ -352,7 +352,6 @@
             border-top: 1px solid #e5e7eb;
             margin: 2em 0;
         }
-
     </style>
 </head>
 
@@ -373,7 +372,7 @@
 
             <div class="px-4 mb-6 fade-in">
                 <button onclick="openNewChatModal()"
-                    class="w-full bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all btn-primary">
+                    class="w-full bg-black hover:bg-gray-800 text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all btn-primary">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                     </svg>
@@ -415,8 +414,8 @@
                 <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">HISTORY</h2>
                 <div id="chatHistory" class="space-y-1">
                     <div
-                        class="history-item flex items-center gap-2 py-2.5 px-3 rounded-xl bg-blue-50 cursor-pointer border border-blue-100">
-                        <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                        class="history-item flex items-center gap-2 py-2.5 px-3 rounded-xl bg-gray-100 cursor-pointer border border-gray-300">
+                        <svg class="w-4 h-4 text-gray-900" fill="currentColor" viewBox="0 0 20 20">
                             <path
                                 d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z">
                             </path>
@@ -530,7 +529,7 @@
                         <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">SOURCES ANALYZED</h3>
                         <div class="space-y-2">
                             <a href="#"
-                                class="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors group">
+                                class="flex items-center gap-2 text-gray-900 hover:text-black text-sm font-medium transition-colors group">
                                 <svg class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none"
                                     stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -540,7 +539,7 @@
                                 Annual report and financial statements
                             </a>
                             <a href="#"
-                                class="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors group">
+                                class="flex items-center gap-2 text-gray-900 hover:text-black text-sm font-medium transition-colors group">
                                 <svg class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none"
                                     stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -550,7 +549,7 @@
                                 Annual report and financial statements
                             </a>
                             <a href="#"
-                                class="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors group">
+                                class="flex items-center gap-2 text-gray-900 hover:text-black text-sm font-medium transition-colors group">
                                 <svg class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none"
                                     stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -568,8 +567,8 @@
                             Specifically, the company considers expansion through acquisition as one of the options to
                             grow its operating base alongside its organic initiatives such as life extension and
                             repowering of existing assets <sup
-                                class="text-blue-600 font-semibold cursor-pointer hover:text-blue-700">1</sup> <sup
-                                class="text-blue-600 font-semibold cursor-pointer hover:text-blue-700">2</sup>.
+                                class="text-gray-900 font-semibold cursor-pointer hover:text-black">1</sup> <sup
+                                class="text-gray-900 font-semibold cursor-pointer hover:text-black">2</sup>.
                         </p>
 
                         <h4 class="text-xl font-bold text-gray-900 mb-5">present in the table the main opex lines with
@@ -598,41 +597,41 @@
                                         <td class="px-6 py-4 text-sm text-gray-700 font-medium">Depreciation of
                                             property, plant and equipment</td>
                                         <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">28,533 <sup
-                                                class="text-blue-600">1</sup></td>
+                                                class="text-gray-900">1</sup></td>
                                         <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">32,145 <sup
-                                                class="text-blue-600">1</sup></td>
+                                                class="text-gray-900">1</sup></td>
                                         <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">35,892 <sup
-                                                class="text-blue-600">1</sup></td>
+                                                class="text-gray-900">1</sup></td>
                                     </tr>
                                     <tr class="table-row border-b border-gray-100">
                                         <td class="px-6 py-4 text-sm text-gray-700 font-medium">Amortisation of
                                             intangible fixed assets</td>
                                         <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">1,234 <sup
-                                                class="text-blue-600">1</sup></td>
+                                                class="text-gray-900">1</sup></td>
                                         <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">1,456 <sup
-                                                class="text-blue-600">1</sup></td>
+                                                class="text-gray-900">1</sup></td>
                                         <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">1,678 <sup
-                                                class="text-blue-600">1</sup></td>
+                                                class="text-gray-900">1</sup></td>
                                     </tr>
                                     <tr class="table-row border-b border-gray-100">
                                         <td class="px-6 py-4 text-sm text-gray-700 font-medium">Payments to landlords
                                             for royalties</td>
                                         <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">5,678 <sup
-                                                class="text-blue-600">2</sup></td>
+                                                class="text-gray-900">2</sup></td>
                                         <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">6,123 <sup
-                                                class="text-blue-600">2</sup></td>
+                                                class="text-gray-900">2</sup></td>
                                         <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">6,789 <sup
-                                                class="text-blue-600">2</sup></td>
+                                                class="text-gray-900">2</sup></td>
                                     </tr>
                                     <tr class="table-row">
                                         <td class="px-6 py-4 text-sm text-gray-700 font-medium">Audit of financial
                                             statements</td>
                                         <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">450 <sup
-                                                class="text-blue-600">1</sup></td>
+                                                class="text-gray-900">1</sup></td>
                                         <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">475 <sup
-                                                class="text-blue-600">1</sup></td>
+                                                class="text-gray-900">1</sup></td>
                                         <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">500 <sup
-                                                class="text-blue-600">1</sup></td>
+                                                class="text-gray-900">1</sup></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -649,14 +648,14 @@
             <div class="border-t border-gray-200 p-4 bg-white shadow-lg">
                 <div class="max-w-4xl mx-auto relative">
                     <input type="text" placeholder="Search or ask any question..."
-                        class="w-full pl-12 pr-16 py-3.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent input-focus shadow-sm">
+                        class="w-full pl-12 pr-16 py-3.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent input-focus shadow-sm">
                     <svg class="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" fill="none"
                         stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
                     <button onclick="askQuestion()"
-                        class="absolute right-3 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-xl flex items-center justify-center transition-all btn-primary shadow-md">
+                        class="absolute right-3 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black hover:bg-gray-800 text-white rounded-xl flex items-center justify-center transition-all btn-primary shadow-md">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
@@ -683,10 +682,10 @@
             <div class="p-4 border-b border-gray-200 bg-gray-50">
                 <div class="flex gap-2">
                     <input type="text" id="tickerInput" placeholder="Enter ticker (e.g., AAPL, TSLA)"
-                        class="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent input-focus shadow-sm"
+                        class="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent input-focus shadow-sm"
                         onkeypress="handleTickerKeyPress(event)">
                     <button onclick="searchTicker()" id="searchBtn"
-                        class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all btn-primary shadow-md">
+                        class="px-6 py-2.5 bg-black hover:bg-gray-800 text-white font-semibold rounded-xl transition-all btn-primary shadow-md">
                         Search
                     </button>
                 </div>
@@ -755,7 +754,7 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         let pdfDoc = null;
-        let scale = 1.8;
+        let scale = 1.2;
         const scaleDelta = 0.2;
 
         async function renderAllPages() {
@@ -818,7 +817,7 @@
             const pdfViewer = document.getElementById('pdfViewer');
             const pdfControls = document.getElementById('pdfControls');
             const pdfContainer = document.getElementById('pdfContainer');
-            
+
             pdfPlaceholder.classList.add('hidden');
             pdfLoading.classList.remove('hidden');
             pdfViewer.classList.add('hidden');
@@ -842,31 +841,31 @@
                 console.log('PDF fetched, converting to array buffer...');
                 const arrayBuffer = await response.arrayBuffer();
                 console.log('Array buffer size:', arrayBuffer.byteLength);
-                
+
                 if (arrayBuffer.byteLength === 0) {
                     throw new Error('PDF file is empty');
                 }
-                
+
                 const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
                 const pdf = await loadingTask.promise;
-                
+
                 console.log('PDF loaded, pages:', pdf.numPages);
                 pdfDoc = pdf;
-                scale = 1.8;
+                scale = 1.2;
                 updateZoomDisplay();
-                
+
                 await renderAllPages();
-                
+
                 console.log('All pages rendered');
-                
+
                 pdfLoading.classList.add('hidden');
                 pdfPlaceholder.classList.add('hidden');
                 pdfViewer.classList.remove('hidden');
                 pdfViewer.style.display = 'flex';
                 pdfControls.classList.remove('hidden');
-                
+
                 pdfContainer.scrollTop = 0;
-                
+
                 console.log('PDF viewer visible:', !pdfViewer.classList.contains('hidden'));
                 console.log('PDF viewer children:', pdfViewer.children.length);
                 console.log('PDF viewer style display:', pdfViewer.style.display);
@@ -1066,7 +1065,7 @@
             try {
                 const response = await fetch(`/api/chats/${chatId}`);
                 const chat = await response.json();
-                
+
                 if (response.ok) {
                     currentChatId = chatId;
                     console.log('Chat loaded:', chat);
@@ -1090,7 +1089,7 @@
             const mainContent = document.querySelector('main .flex-1.overflow-y-auto');
             const stockInfo = chat.stock_info;
             const hasReport = chat.has_report || chat.messages.some(msg => msg.question === "Generate comprehensive report");
-            
+
             let html = `
                 <div class="max-w-4xl mx-auto fade-in">
                     <div class="mb-8">
@@ -1232,13 +1231,13 @@
                         </div>
                         <div class="mt-6 flex gap-3">
                             <button onclick="generateReport()" id="generateReportBtn"
-                                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-xl transition-all btn-primary shadow-md flex items-center gap-2">
+                                class="bg-black hover:bg-gray-800 text-white font-semibold py-2.5 px-6 rounded-xl transition-all btn-primary shadow-md flex items-center gap-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                 </svg>
                                 Generate Report
                             </button>
-                            <button onclick="exportReportToPDF()" id="exportReportBtn" class="${hasReport ? '' : 'hidden'} bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-6 rounded-xl transition-all btn-primary shadow-md flex items-center gap-2">
+                            <button onclick="exportReportToPDF()" id="exportReportBtn" class="${hasReport ? '' : 'hidden'} bg-black hover:bg-gray-800 text-white font-semibold py-2.5 px-6 rounded-xl transition-all btn-primary shadow-md flex items-center gap-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                 </svg>
@@ -1277,7 +1276,7 @@
 
             input.value = '';
             const messagesDiv = document.getElementById('chatMessages');
-            
+
             messagesDiv.innerHTML += `
                 <div class="bg-white rounded-xl p-6 border border-gray-200">
                     <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${question}</div>
@@ -1297,7 +1296,7 @@
 
                 const data = await response.json();
                 console.log('Response:', data);
-                
+
                 const lastMsg = messagesDiv.lastElementChild;
                 if (response.ok) {
                     if (data.answer) {
@@ -1336,7 +1335,7 @@
                 const response = await fetch('/api/chats');
                 const chats = await response.json();
                 const historyDiv = document.getElementById('chatHistory');
-                
+
                 historyDiv.innerHTML = chats.map(chat => `
                     <div onclick="loadChat('${chat.id}')" class="history-item flex items-center gap-2 py-2.5 px-3 rounded-xl cursor-pointer">
                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1376,7 +1375,7 @@
                 });
 
                 const data = await response.json();
-                
+
                 if (response.ok) {
                     const lastMsg = messagesDiv.lastElementChild;
                     lastMsg.innerHTML = `
@@ -1421,9 +1420,9 @@
                 margin: [15, 15, 15, 15],
                 filename: `${ticker}_Quarterly_Report_${new Date().toISOString().split('T')[0]}.pdf`,
                 image: { type: 'jpeg', quality: 0.85 },
-                html2canvas: { 
+                html2canvas: {
                     scale: 1,
-                    useCORS: true, 
+                    useCORS: true,
                     letterRendering: false,
                     logging: false,
                     windowWidth: 800,
@@ -1445,40 +1444,40 @@
                 font-size: 11pt;
                 overflow: hidden;
             `;
-            
+
             let reportContent = reportElement.innerHTML;
-            
+
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = reportContent;
-            
+
             const styleElement = (element, styles) => {
                 if (!element.style.cssText) {
                     element.style.cssText = styles;
                 }
             };
-            
+
             const elements = tempDiv.querySelectorAll('*');
             elements.forEach(el => {
                 const tagName = el.tagName.toLowerCase();
-                
-                switch(tagName) {
+
+                switch (tagName) {
                     case 'h1':
-                        styleElement(el, 'font-size: 24pt; font-weight: bold; margin-top: 30px; margin-bottom: 15px; color: #111827; border-bottom: 3px solid #2563eb; padding-bottom: 10px; page-break-after: avoid;');
+                        styleElement(el, 'font-size: 24pt; font-weight: bold; margin-top: 30px; margin-bottom: 15px; color: #111827; border-bottom: 3px solid #000000; padding-bottom: 10px; page-break-after: avoid;');
                         break;
                     case 'h2':
-                        styleElement(el, 'font-size: 18pt; font-weight: bold; margin-top: 25px; margin-bottom: 12px; color: #1e40af; border-bottom: 2px solid #3b82f6; padding-bottom: 8px; page-break-after: avoid;');
+                        styleElement(el, 'font-size: 18pt; font-weight: bold; margin-top: 25px; margin-bottom: 12px; color: #111827; border-bottom: 2px solid #000000; padding-bottom: 8px; page-break-after: avoid;');
                         break;
                     case 'h3':
-                        styleElement(el, 'font-size: 14pt; font-weight: bold; margin-top: 20px; margin-bottom: 10px; color: #1e3a8a; page-break-after: avoid;');
+                        styleElement(el, 'font-size: 14pt; font-weight: bold; margin-top: 20px; margin-bottom: 10px; color: #111827; page-break-after: avoid;');
                         break;
                     case 'h4':
-                        styleElement(el, 'font-size: 12pt; font-weight: bold; margin-top: 15px; margin-bottom: 8px; color: #1e40af; page-break-after: avoid;');
+                        styleElement(el, 'font-size: 12pt; font-weight: bold; margin-top: 15px; margin-bottom: 8px; color: #111827; page-break-after: avoid;');
                         break;
                     case 'h5':
-                        styleElement(el, 'font-size: 11pt; font-weight: bold; margin-top: 12px; margin-bottom: 6px; color: #1e40af; page-break-after: avoid;');
+                        styleElement(el, 'font-size: 11pt; font-weight: bold; margin-top: 12px; margin-bottom: 6px; color: #111827; page-break-after: avoid;');
                         break;
                     case 'h6':
-                        styleElement(el, 'font-size: 10pt; font-weight: bold; margin-top: 10px; margin-bottom: 5px; color: #1e40af; page-break-after: avoid;');
+                        styleElement(el, 'font-size: 10pt; font-weight: bold; margin-top: 10px; margin-bottom: 5px; color: #111827; page-break-after: avoid;');
                         break;
                     case 'p':
                         styleElement(el, 'margin-bottom: 15px; text-align: justify; line-height: 1.8;');
@@ -1516,7 +1515,7 @@
                         styleElement(el, 'border: none; border-top: 2px solid #e5e7eb; margin: 30px 0;');
                         break;
                     case 'blockquote':
-                        styleElement(el, 'border-left: 4px solid #3b82f6; margin-left: 0; margin-bottom: 18px; color: #4b5563; font-style: italic; background-color: #f9fafb; padding: 15px 20px; border-radius: 4px;');
+                        styleElement(el, 'border-left: 4px solid #000000; margin-left: 0; margin-bottom: 18px; color: #4b5563; font-style: italic; background-color: #f9fafb; padding: 15px 20px; border-radius: 4px;');
                         break;
                     case 'code':
                         if (el.parentElement.tagName.toLowerCase() !== 'pre') {
@@ -1527,13 +1526,13 @@
                         styleElement(el, 'background-color: #f3f4f6; padding: 15px; border-radius: 4px; overflow-x: auto; margin: 15px 0; border: 1px solid #d1d5db;');
                         break;
                     case 'a':
-                        styleElement(el, 'color: #2563eb; text-decoration: underline;');
+                        styleElement(el, 'color: #000000; text-decoration: underline;');
                         break;
                 }
             });
-            
+
             reportContent = tempDiv.innerHTML;
-            
+
             reportContainer.innerHTML = `
                 <style>
                     * {
@@ -1547,40 +1546,40 @@
                     h1 {
                         font-size: 24pt !important;
                         color: #111827 !important;
-                        border-bottom: 3px solid #2563eb !important;
+                        border-bottom: 3px solid #000000 !important;
                         padding-bottom: 10px !important;
                         margin-top: 30px !important;
                         margin-bottom: 15px !important;
                     }
                     h2 {
                         font-size: 18pt !important;
-                        color: #1e40af !important;
-                        border-bottom: 2px solid #3b82f6 !important;
+                        color: #111827 !important;
+                        border-bottom: 2px solid #000000 !important;
                         padding-bottom: 8px !important;
                         margin-top: 25px !important;
                         margin-bottom: 12px !important;
                     }
                     h3 {
                         font-size: 14pt !important;
-                        color: #1e3a8a !important;
+                        color: #111827 !important;
                         margin-top: 20px !important;
                         margin-bottom: 10px !important;
                     }
                     h4 {
                         font-size: 12pt !important;
-                        color: #1e40af !important;
+                        color: #111827 !important;
                         margin-top: 15px !important;
                         margin-bottom: 8px !important;
                     }
                     h5 {
                         font-size: 11pt !important;
-                        color: #1e40af !important;
+                        color: #111827 !important;
                         margin-top: 12px !important;
                         margin-bottom: 6px !important;
                     }
                     h6 {
                         font-size: 10pt !important;
-                        color: #1e40af !important;
+                        color: #111827 !important;
                         margin-top: 10px !important;
                         margin-bottom: 5px !important;
                     }
@@ -1643,7 +1642,7 @@
                         color: #374151 !important;
                     }
                     blockquote {
-                        border-left: 4px solid #3b82f6 !important;
+                        border-left: 4px solid #000000 !important;
                         margin-left: 0 !important;
                         margin-bottom: 18px !important;
                         color: #4b5563 !important;
@@ -1678,11 +1677,11 @@
                         padding: 0 !important;
                     }
                     a {
-                        color: #2563eb !important;
+                        color: #000000 !important;
                         text-decoration: underline !important;
                     }
                 </style>
-                <div style="margin-bottom: 40px; border-bottom: 3px solid #2563eb; padding-bottom: 25px; page-break-after: avoid;">
+                <div style="margin-bottom: 40px; border-bottom: 3px solid #000000; padding-bottom: 25px; page-break-after: avoid;">
                     <h1 style="font-size: 28pt; font-weight: bold; margin-bottom: 8px; color: #111827; border: none; padding: 0;">${stockName} (${ticker})</h1>
                     <p style="color: #6b7280; font-size: 12pt; margin: 0;">Quarterly Report Analysis - Generated ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
                 </div>
@@ -1692,31 +1691,31 @@
             `;
 
             document.body.appendChild(reportContainer);
-            
+
             await new Promise(resolve => setTimeout(resolve, 100));
-            
+
             const containerHeight = reportContainer.scrollHeight;
             const maxCanvasSize = 16384;
             const estimatedCanvasHeight = containerHeight * opt.html2canvas.scale;
-            
+
             if (estimatedCanvasHeight > maxCanvasSize) {
                 opt.html2canvas.scale = Math.max(0.5, maxCanvasSize / containerHeight * 0.9);
                 console.log(`Reducing scale to ${opt.html2canvas.scale} to fit canvas size limits`);
             }
-            
+
             const exportBtn = document.getElementById('exportReportBtn');
             const originalBtnText = exportBtn.innerHTML;
             exportBtn.disabled = true;
             exportBtn.innerHTML = '<div class="loading-spinner mx-auto" style="width: 16px; height: 16px; display: inline-block;"></div> Exporting...';
-            
+
             try {
                 const worker = html2pdf().set(opt).from(reportContainer);
-                
+
                 await new Promise((resolve, reject) => {
                     const timeout = setTimeout(() => {
                         reject(new Error('PDF export timed out. The report may be too large.'));
                     }, 120000);
-                    
+
                     worker.save().then(() => {
                         clearTimeout(timeout);
                         resolve();
@@ -1727,7 +1726,7 @@
                 });
             } catch (error) {
                 console.error('Error exporting PDF:', error);
-                
+
                 let errorMessage = 'Failed to export PDF. ';
                 if (error.message && (error.message.includes('Canvas exceeds max size') || error.message.includes('exceeded'))) {
                     errorMessage += 'The report is too large. Try generating a shorter report or contact support.';
@@ -1736,7 +1735,7 @@
                 } else {
                     errorMessage += 'Please try again.';
                 }
-                
+
                 alert(errorMessage);
             } finally {
                 exportBtn.disabled = false;
@@ -1747,11 +1746,11 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             loadChatHistory();
             const searchInput = document.querySelector('input[placeholder="Search or ask any question..."]');
             if (searchInput) {
-                searchInput.addEventListener('keypress', function(e) {
+                searchInput.addEventListener('keypress', function (e) {
                     if (e.key === 'Enter') {
                         askQuestion();
                     }
@@ -1766,27 +1765,22 @@
                 <h3 class="text-xl font-bold text-gray-900">Start New Chat</h3>
                 <button onclick="closeNewChatModal()" class="text-gray-400 hover:text-gray-600">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
                     </svg>
                 </button>
             </div>
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Enter Ticker Symbol</label>
-                <input 
-                    id="newChatTickerInput"
-                    type="text" 
-                    placeholder="e.g., AAPL, TSLA, MSFT" 
-                    class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    onkeypress="if(event.key==='Enter') createNewChat()"
-                >
+                <input id="newChatTickerInput" type="text" placeholder="e.g., AAPL, TSLA, MSFT"
+                    class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    onkeypress="if(event.key==='Enter') createNewChat()">
             </div>
             <div class="loading-indicator hidden mb-4 text-center text-gray-600">
                 Loading stock data and PDF...
             </div>
-            <button 
-                onclick="createNewChat()" 
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-all"
-            >
+            <button onclick="createNewChat()"
+                class="w-full bg-black hover:bg-gray-800 text-white font-semibold py-3 px-4 rounded-xl transition-all">
                 Create Chat
             </button>
         </div>

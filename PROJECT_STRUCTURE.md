@@ -38,25 +38,24 @@ Fira 2.0/
 ├── README.md                     # Project documentation
 ├── .env.example                  # Environment variables template
 ├── .gitignore                    # Git ignore rules
-│
-└── [Old files - can be removed]
-    ├── app.py.old               # Old monolithic app.py
-    └── main.py.old              # Old CLI script
 
 ```
 
 ## Module Responsibilities
 
 ### `app/__init__.py`
+
 - Creates and configures the Flask application
 - Registers blueprints
 - Application factory pattern
 
 ### `app/routes/main.py`
+
 - Homepage route (`/`)
 - PDF file serving (`/pdfs/<filename>`)
 
 ### `app/routes/api.py`
+
 - `/api/create-chat` - Create new chat for ticker
 - `/api/chats` - List all chats
 - `/api/chats/<id>` - Get specific chat
@@ -65,28 +64,34 @@ Fira 2.0/
 - `/api/pdfs` - List available PDFs
 
 ### `app/services/sec_service.py`
+
 - Handles SEC API interactions
 - Downloads 10-Q filings
 - Gets filing URLs
 
 ### `app/services/stock_service.py`
+
 - Fetches stock information using yfinance
 - Returns stock fundamentals
 
 ### `app/services/pdf_service.py`
+
 - Extracts text from PDF files
 - Uses pdfplumber (with PyPDF2 fallback)
 
 ### `app/services/llm_service.py`
+
 - Integrates with OpenAI API
 - Answers questions based on PDF content
 
 ### `app/models/chat.py`
+
 - Chat data model
 - In-memory chat storage
 - Message management
 
 ### `app/utils/config.py`
+
 - Configuration management
 - Environment variable loading
 - App configuration
@@ -111,4 +116,3 @@ python run.py
 - Old `main.py` (CLI script) has been renamed to `main.py.old`
 - All functionality has been preserved and reorganized
 - The application now follows Flask best practices with blueprints and service layer
-
