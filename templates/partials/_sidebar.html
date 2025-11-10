@@ -1,0 +1,84 @@
+<aside id="sidebar"
+    class="w-64 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 overflow-hidden">
+    <div class="p-6 fade-in flex items-center justify-between border-b border-gray-100">
+        <div class="flex items-center gap-3">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Fira Logo" class="w-8 h-8 logo-img rounded-lg">
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Fira</h1>
+        </div>
+        <button onclick="toggleSidebar()"
+            class="sidebar-toggle p-2 rounded-lg text-gray-400 hover:text-gray-600">
+            <svg id="sidebarToggleIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    </div>
+
+    <div class="px-4 py-6 fade-in">
+        <button onclick="openNewChatModal()"
+            class="w-full bg-black hover:bg-gray-800 text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-between transition-all btn-primary shadow-sm">
+            <div class="flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                <span>Analyze Stock</span>
+            </div>
+            <span class="text-xs text-gray-400 font-normal" id="shortcutHint"></span>
+        </button>
+    </div>
+
+    <div class="px-4 mb-4 fade-in">
+        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">QUICK ACTIONS</h2>
+        <nav class="space-y-1">
+            <a href="#"
+                class="sidebar-item flex items-center gap-3 py-2.5 px-3 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                    </path>
+                </svg>
+                <span class="font-medium">Generate Report</span>
+            </a>
+            <a href="#"
+                class="sidebar-item flex items-center gap-3 py-2.5 px-3 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                    </path>
+                </svg>
+                <span class="font-medium">SEC Filings</span>
+            </a>
+            <a href="#"
+                class="sidebar-item flex items-center gap-3 py-2.5 px-3 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 10V3L4 14h7v7l9-11h-7z">
+                    </path>
+                </svg>
+                <span class="font-medium">Stock Analysis</span>
+            </a>
+        </nav>
+    </div>
+
+    <div class="px-4 mb-4 fade-in flex-1 overflow-y-auto scrollbar-hide">
+        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">RECENT ANALYSES</h2>
+        <div id="chatHistory" class="space-y-1">
+        </div>
+    </div>
+
+    <div class="px-4 pb-6 fade-in border-t border-gray-100 pt-4">
+        <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 mb-3">
+            <div class="flex items-center gap-2 mb-2">
+                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-xs font-semibold text-gray-700">BETA</span>
+            </div>
+            <p class="text-xs text-gray-600 leading-relaxed">AI-powered financial analysis. Results may vary.</p>
+        </div>
+        <div class="flex flex-col gap-2 mt-3">
+            <a href="{{ url_for('main.terms') }}" class="text-xs text-gray-500 hover:text-gray-700 transition-colors">TERMS</a>
+            <a href="{{ url_for('main.privacy') }}" class="text-xs text-gray-500 hover:text-gray-700 transition-colors">PRIVACY</a>
+        </div>
+    </div>
+</aside>
+

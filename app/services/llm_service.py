@@ -9,21 +9,27 @@ class LLMService:
             self.client = OpenAI(api_key=Config.OPENAI_API_KEY)
     
     def get_system_prompt(self) -> str:
-        return """You are a financial analyst assistant specializing in analyzing SEC filings (10-Q and 10-K reports). 
-Your job is to answer questions accurately based on the provided report information.
-You must thoroughly search through the ENTIRE document, including all sections, tables, footnotes, and appendices.
-Financial metrics like EPS, revenue, net income, and other key figures may appear in multiple places throughout the document.
-If the information is not available in the provided text, clearly state that.
-Be specific and cite numbers or data when available.
+        return """You are a financial analyst assistant. You analyze SEC filings (10-Q and 10-K reports) and answer questions clearly and concisely.
 
-IMPORTANT FORMATTING REQUIREMENTS:
-- Use proper paragraph structure with clear breaks between ideas
-- Use bullet points (markdown format: - or *) for lists, comparisons, or multiple related items
-- Use numbered lists when presenting sequential information or rankings
-- Use bold text (**text**) to emphasize key metrics, numbers, or important terms
-- Structure longer answers with headings (##) to organize different sections
-- Break up dense information into digestible paragraphs
-- Use tables when presenting structured data or comparisons"""
+RESPONSE STYLE:
+- Keep answers short and to the point unless the user asks for detailed analysis
+- Use simple, clear language that's easy to understand
+- Avoid unnecessary explanations or filler words
+- Only expand on details if specifically requested
+
+ACCURACY:
+- Search the entire document thoroughly (all sections, tables, footnotes)
+- Financial data may appear in multiple places - check everywhere
+- If information isn't found, say so clearly
+- Always cite specific numbers when available
+
+FORMATTING:
+- Use headings (##) wisely to organize longer answers with multiple topics - don't overuse them for short responses
+- Use tables when they add clarity: comparisons, financial metrics across periods, ratios, structured data with multiple values
+- Use bullet points (-) for simple lists or when tables aren't needed
+- Use **bold** for key numbers and metrics
+- Choose the format that best presents the information - tables for comparisons, headings for organization, bullets for lists
+- Keep paragraphs short and readable"""
     
     def ingest_pdf(self, pdf_text: str) -> Optional[dict]:
         if not self.client:
@@ -47,13 +53,11 @@ IMPORTANT FORMATTING REQUIREMENTS:
             messages = [{"role": "system", "content": system_prompt}]
             
             if previous_qa and len(previous_qa) > 0:
-                pdf_message = f"""I am providing you with a complete SEC filing (10-Q or 10-K report). This is the same document from our previous conversation.
+                pdf_message = f"""SEC filing document (same as previous conversation):
 
-{pdf_text}
-
-Please use this document to answer the following question, and also consider the context from our previous conversation."""
+{pdf_text}"""
             else:
-                pdf_message = f"""I am providing you with a complete SEC filing (10-Q or 10-K report). Please use this document to answer the following question.
+                pdf_message = f"""SEC filing document:
 
 {pdf_text}"""
             
@@ -66,22 +70,17 @@ Please use this document to answer the following question, and also consider the
             
             messages.append({"role": "user", "content": f"""Question: {question}
 
-IMPORTANT: Search through the ENTIRE document thoroughly. Financial metrics and data may appear in:
-- Financial statements (Income Statement, Balance Sheet, Cash Flow Statement)
-- Management Discussion and Analysis (MD&A) sections
-- Footnotes and notes to financial statements
-- Summary sections at the beginning or end
-- Tables and exhibits throughout the document
+Answer concisely and clearly. Search the entire document (financial statements, MD&A, footnotes, tables).
 
-Please provide a clear, detailed answer based on the document. Format your response using markdown:
-- Use proper paragraph breaks to separate different ideas
-- Use bullet points (- or *) for lists, multiple items, or comparisons
-- Use numbered lists (1., 2., 3.) for sequential information
-- Use **bold** for key metrics, numbers, and important terms
-- Use headings (##) to organize longer answers into sections
-- Break up information into readable paragraphs
+Format:
+- Use headings (##) to organize longer answers with multiple topics
+- Use tables when helpful: comparisons, financial metrics across periods, ratios, structured data
+- Use bullet points (-) for simple lists or when tables aren't needed
+- Use **bold** for key numbers
+- Choose the best format for each piece of information
+- Keep it short unless detailed analysis is needed
 
-If you cannot find the answer in the document after thoroughly searching, say so explicitly."""})
+If the answer isn't in the document, say so directly."""})
             
             print(f"Calling OpenAI API with {len(messages)} messages...")
             response = self.client.chat.completions.create(
@@ -118,13 +117,11 @@ If you cannot find the answer in the document after thoroughly searching, say so
             messages = [{"role": "system", "content": system_prompt}]
             
             if previous_qa and len(previous_qa) > 0:
-                pdf_message = f"""I am providing you with a complete SEC filing (10-Q or 10-K report). This is the same document from our previous conversation.
+                pdf_message = f"""SEC filing document (same as previous conversation):
 
-{pdf_text}
-
-Please use this document to answer the following question, and also consider the context from our previous conversation."""
+{pdf_text}"""
             else:
-                pdf_message = f"""I am providing you with a complete SEC filing (10-Q or 10-K report). Please use this document to answer the following question.
+                pdf_message = f"""SEC filing document:
 
 {pdf_text}"""
             
@@ -137,22 +134,17 @@ Please use this document to answer the following question, and also consider the
             
             messages.append({"role": "user", "content": f"""Question: {question}
 
-IMPORTANT: Search through the ENTIRE document thoroughly. Financial metrics and data may appear in:
-- Financial statements (Income Statement, Balance Sheet, Cash Flow Statement)
-- Management Discussion and Analysis (MD&A) sections
-- Footnotes and notes to financial statements
-- Summary sections at the beginning or end
-- Tables and exhibits throughout the document
+Answer concisely and clearly. Search the entire document (financial statements, MD&A, footnotes, tables).
 
-Please provide a clear, detailed answer based on the document. Format your response using markdown:
-- Use proper paragraph breaks to separate different ideas
-- Use bullet points (- or *) for lists, multiple items, or comparisons
-- Use numbered lists (1., 2., 3.) for sequential information
-- Use **bold** for key metrics, numbers, and important terms
-- Use headings (##) to organize longer answers into sections
-- Break up information into readable paragraphs
+Format:
+- Use headings (##) to organize longer answers with multiple topics
+- Use tables when helpful: comparisons, financial metrics across periods, ratios, structured data
+- Use bullet points (-) for simple lists or when tables aren't needed
+- Use **bold** for key numbers
+- Choose the best format for each piece of information
+- Keep it short unless detailed analysis is needed
 
-If you cannot find the answer in the document after thoroughly searching, say so explicitly."""})
+If the answer isn't in the document, say so directly."""})
             
             print(f"Calling OpenAI API with streaming, {len(messages)} messages...")
             stream = self.client.chat.completions.create(
@@ -188,11 +180,9 @@ If you cannot find the answer in the document after thoroughly searching, say so
         print(f"Generating comprehensive report for {ticker}, PDF text length: {len(pdf_text)} characters")
         
         try:
-            system_prompt = """You are a senior financial analyst specializing in comprehensive analysis of SEC quarterly reports (10-Q filings). Your expertise includes financial statement analysis, ratio analysis, trend identification, risk assessment, and investment recommendations.
+            system_prompt = """You are a financial analyst creating investment reports from SEC quarterly filings (10-Q reports).
 
-Your task is to create a comprehensive, professional investment report analyzing the entire quarterly report document provided to you.
-
-IMPORTANT: Write in clear, accessible language that is easy to understand. Use medium-level financial terminology - avoid overly complex jargon, but don't oversimplify. Make the report digestible for readers with basic to intermediate financial knowledge. Explain technical terms when first introduced."""
+Write in clear, simple language that's easy to understand. Avoid complex jargon. Explain technical terms when you first use them. Make the report accessible to readers with basic financial knowledge."""
             
             stock_context = ""
             if stock_info:
@@ -208,122 +198,85 @@ Company Information:
 - Sector: {stock_info.get('sector', 'N/A')}
 """
             
-            prompt = f"""You are analyzing a complete 10-Q quarterly report for {ticker}. Please generate a comprehensive investment analysis report covering the entire document.
+            prompt = f"""Analyze the complete 10-Q quarterly report for {ticker} and create a comprehensive investment report.
 
 {stock_context}
 
-**CRITICAL INSTRUCTIONS:**
+**ANALYSIS REQUIREMENTS:**
+Review the entire document: financial statements, MD&A, footnotes, risk factors, and all sections.
 
-1. **Thorough Analysis**: Analyze the ENTIRE document including:
-   - All financial statements (Income Statement, Balance Sheet, Cash Flow Statement)
-   - Management Discussion and Analysis (MD&A)
-   - Risk factors and forward-looking statements
-   - Footnotes and notes to financial statements
-   - Comparative periods and year-over-year changes
-   - Segment information if available
-   - Any significant events or transactions
-
-2. **Report Structure**: Organize your report with the following sections:
+**REPORT STRUCTURE:**
 
 ## Executive Summary
-- Brief overview of the quarter's performance
-- Key highlights and major developments
-- Overall financial health assessment
+- Quarter performance overview
+- Key highlights
+- Overall financial health
 
-## Financial Performance Analysis
-- Revenue analysis (current quarter vs previous quarter, vs same quarter last year)
-- Profitability metrics (gross margin, operating margin, net margin)
-- Earnings per share (EPS) analysis
-- Create tables comparing key metrics across periods
-- Identify trends and patterns
+## Financial Performance
+- Revenue (current vs previous quarter, vs same quarter last year)
+- Profitability (gross margin, operating margin, net margin)
+- Earnings per share (EPS)
+- Use tables when comparing metrics across multiple periods
+- Identify trends
 
-## Balance Sheet Analysis
-- Assets, liabilities, and equity changes
-- Working capital analysis
-- Debt levels and debt-to-equity ratios
-- Cash and cash equivalents position
-- Use tables to present comparative data
+## Balance Sheet
+- Changes in assets, liabilities, equity
+- Working capital
+- Debt levels and ratios
+- Cash position
+- Use tables when comparing across periods or presenting structured data
 
-## Cash Flow Analysis
+## Cash Flow
 - Operating cash flow trends
-- Investing activities
-- Financing activities
-- Free cash flow analysis
-- Cash flow quality assessment
+- Investing and financing activities
+- Free cash flow
+- Cash flow quality
+- Use tables when comparing across periods
 
 ## Key Financial Ratios
-Present in a comprehensive table format:
 - Liquidity ratios (Current ratio, Quick ratio)
-- Profitability ratios (ROE, ROA, Profit margins)
+- Profitability ratios (ROE, ROA, margins)
 - Efficiency ratios (Asset turnover, Inventory turnover)
 - Leverage ratios (Debt-to-equity, Debt-to-assets)
-- Compare with previous periods
+- Present in tables when comparing across periods
 
 ## Operational Highlights
 - Key business developments
-- Segment performance (if applicable)
-- Market position and competitive landscape
-- Strategic initiatives mentioned
+- Segment performance (if available) - use tables if multiple segments with data
+- Strategic initiatives
 
 ## Risk Assessment
-- Identify and analyze key risks mentioned in the filing
-- Financial risks
-- Operational risks
-- Market risks
-- Regulatory risks
+- Financial, operational, market, and regulatory risks from the filing
 
-## Outlook and Forward-Looking Statements
-- Management's guidance and outlook
-- Forward-looking statements analysis
+## Outlook
+- Management guidance
+- Forward-looking statements
 - Expected trends and challenges
 
 ## Investment Recommendation
+Choose ONE: **STRONG BUY**, **BUY**, **SELL**, or **STRONG SELL**
 
-At the end of your report, provide a clear investment recommendation based on your comprehensive analysis. Choose ONE of the following:
+Justify with:
+- Key supporting factors
+- Risk considerations
+- Valuation notes (if data supports)
+- Time horizon
 
-**STRONG BUY** - If the company shows exceptional financial performance, strong growth prospects, solid fundamentals, and minimal risks.
+**FORMATTING:**
+- Use markdown (## headings, bullet points, **bold** for numbers)
+- Use headings (##) to organize sections - don't overuse them
+- Use tables when they add clarity: comparisons across periods, financial metrics, ratios, structured data with multiple values
+- Use bullet points for simple lists or when tables aren't needed
+- Choose the best format for each piece of information
+- Include specific numbers and dates
+- Keep language clear and simple
+- Explain technical terms when first used
+- If data is missing, state it clearly
 
-**BUY** - If the company shows good financial performance, positive trends, reasonable valuation, and manageable risks.
-
-**SELL** - If the company shows declining performance, concerning trends, weak fundamentals, or significant risks.
-
-**STRONG SELL** - If the company shows severe financial distress, major red flags, unsustainable operations, or critical risks.
-
-Provide detailed justification for your recommendation, including:
-- Key factors supporting the recommendation
-- Risk factors to consider
-- Price targets or valuation considerations (if data supports)
-- Time horizon considerations
-
-**FORMATTING REQUIREMENTS:**
-- Use markdown formatting throughout
-- Use ## for main section headings, ### for subsections
-- Create tables using markdown table syntax for all comparative data - ensure tables are well-formatted with clear headers
-- Use bullet points (- or *) for lists and key points
-- Use **bold** for important metrics, numbers, and key terms
-- Use numbered lists for sequential information
-- Include specific numbers, percentages, and dates from the document
-- Add proper spacing between paragraphs and sections for readability
-- For visualizations, describe the data that should be charted (e.g., "Revenue trend: Q1 2023: $X, Q2 2023: $Y, Q3 2023: $Z") and suggest chart types
-- Ensure tables have proper spacing and are easy to read
-
-**IMPORTANT**: 
-- Base all analysis strictly on the information provided in the quarterly report
-- Write in clear, easy-to-understand language - avoid overly complex financial jargon
-- Use medium-level terminology that is accessible but professional
-- Explain technical terms when first introduced (e.g., "EBITDA (earnings before interest, taxes, depreciation, and amortization)")
-- Cite specific page numbers or sections when referencing data
-- If information is missing, clearly state what is not available
-- Be objective and analytical, not promotional
-- Ensure your recommendation is well-supported by the data in the report
-- Add clear spacing between sections and paragraphs for better readability
-- Format tables with proper alignment and spacing
-
-Now, analyze the following complete 10-Q quarterly report:
-
+**DOCUMENT:**
 {pdf_text}
 
-Generate the comprehensive investment analysis report following the structure and requirements above."""
+Generate the report following this structure."""
             
             messages = [
                 {"role": "system", "content": system_prompt},

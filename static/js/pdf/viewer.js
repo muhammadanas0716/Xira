@@ -1,0 +1,128 @@
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+let pdfDoc = null;
+let scale = 1.2;
+const scaleDelta = 0.2;
+let currentPage = 1;
+let totalPages = 0;
+
+async function renderAllPages() {
+  if (!pdfDoc) return;
+
+  const container = document.getElementById("pdfViewer");
+  container.innerHTML = "";
+
+  for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+    try {
+      const page = await pdfDoc.getPage(pageNum);
+      const viewport = page.getViewport({ scale: scale });
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.height = viewport.height;
+      canvas.width = viewport.width;
+
+      const renderContext = {
+        canvasContext: ctx,
+        viewport: viewport,
+      };
+
+      await page.render(renderContext).promise;
+
+      canvas.className = "pdf-page";
+      canvas.setAttribute("data-page-number", pageNum);
+      container.appendChild(canvas);
+    } catch (error) {
+      console.error(`Error rendering page ${pageNum}:`, error);
+    }
+  }
+}
+
+async function loadPdfFromUrl(url) {
+  console.log("Loading PDF from URL:", url);
+  const pdfPlaceholder = document.getElementById("pdfPlaceholder");
+  const pdfLoading = document.getElementById("pdfLoading");
+  const pdfViewer = document.getElementById("pdfViewer");
+  const pdfControls = document.getElementById("pdfControls");
+  const pdfContainer = document.getElementById("pdfContainer");
+
+  pdfPlaceholder.classList.add("hidden");
+  pdfLoading.classList.remove("hidden");
+  pdfViewer.classList.add("hidden");
+  pdfControls.classList.add("hidden");
+  pdfViewer.style.display = "none";
+  pdfViewer.innerHTML = "";
+
+  try {
+    console.log("Fetching PDF as blob...");
+    const response = await fetch(url);
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.warn("PDF file not found:", url);
+        pdfLoading.classList.add("hidden");
+        pdfPlaceholder.classList.remove("hidden");
+        showError(
+          "PDF file not found. The file may not have been downloaded yet."
+        );
+        return;
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    console.log("PDF fetched, converting to array buffer...");
+    const arrayBuffer = await response.arrayBuffer();
+    console.log("Array buffer size:", arrayBuffer.byteLength);
+
+    if (arrayBuffer.byteLength === 0) {
+      throw new Error("PDF file is empty");
+    }
+
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdf = await loadingTask.promise;
+
+    console.log("PDF loaded, pages:", pdf.numPages);
+    pdfDoc = pdf;
+    totalPages = pdf.numPages;
+    currentPage = 1;
+    scale = 1.2;
+    updateZoomDisplay();
+    updatePageDisplay();
+
+    await renderAllPages();
+
+    console.log("All pages rendered");
+
+    pdfLoading.classList.add("hidden");
+    pdfPlaceholder.classList.add("hidden");
+    pdfViewer.classList.remove("hidden");
+    pdfViewer.style.display = "flex";
+    pdfControls.classList.remove("hidden");
+
+    setupPageTracking();
+
+    pdfContainer.scrollTop = 0;
+
+    console.log("PDF viewer visible:", !pdfViewer.classList.contains("hidden"));
+    console.log("PDF viewer children:", pdfViewer.children.length);
+    console.log("PDF viewer style display:", pdfViewer.style.display);
+  } catch (error) {
+    console.error("Error loading PDF:", error);
+    pdfLoading.classList.add("hidden");
+    pdfViewer.classList.add("hidden");
+    pdfViewer.style.display = "none";
+    pdfPlaceholder.classList.remove("hidden");
+    showError("Failed to load PDF: " + error.message);
+  }
+}
+
+function closePdfViewer() {
+  document.getElementById("tickerInput").value = "";
+  const pdfViewer = document.getElementById("pdfViewer");
+  pdfViewer.classList.add("hidden");
+  pdfViewer.style.display = "none";
+  document.getElementById("pdfControls").classList.add("hidden");
+  document.getElementById("pdfLoading").classList.add("hidden");
+  document.getElementById("pdfPlaceholder").classList.remove("hidden");
+  pdfDoc = null;
+  hideMessages();
+}
+

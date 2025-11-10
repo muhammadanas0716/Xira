@@ -1,5 +1,9 @@
 # Fira - Financial Research Assistant
 
+<div align="center">
+  <img src="static/images/logo.png" alt="Fira Logo" width="120" height="120">
+</div>
+
 A Flask-based web application for analyzing stock tickers, downloading SEC 10-Q reports, and asking questions about them using AI.
 
 ## Project Structure
