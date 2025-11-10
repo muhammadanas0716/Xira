@@ -734,13 +734,20 @@
 
     <script>
         marked.setOptions({
-            breaks: true,
-            gfm: true
+            breaks: false,
+            gfm: true,
+            headerIds: false,
+            mangle: false
         });
 
         function renderMarkdown(text) {
             if (!text) return '';
-            return marked.parse(text);
+            try {
+                return marked.parse(text);
+            } catch (e) {
+                console.error('Markdown parsing error:', e);
+                return text.replace(/\n/g, '<br>');
+            }
         }
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -1140,8 +1147,8 @@
             
             messagesDiv.innerHTML += `
                 <div class="bg-white rounded-xl p-6 border border-gray-200">
-                    <div class="text-sm font-semibold text-gray-900">Q: ${question}</div>
-                    <div class="mt-2 text-gray-500">Thinking...</div>
+                    <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${question}</div>
+                    <div class="text-gray-700 leading-relaxed markdown-content">Thinking...</div>
                 </div>
             `;
 
@@ -1158,8 +1165,8 @@
                 const data = await response.json();
                 console.log('Response:', data);
                 
+                const lastMsg = messagesDiv.lastElementChild;
                 if (response.ok) {
-                    const lastMsg = messagesDiv.lastElementChild;
                     if (data.answer) {
                         lastMsg.innerHTML = `
                             <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${data.question}</div>
@@ -1171,15 +1178,14 @@
                             <div class="text-yellow-600">No answer received from LLM. Check server logs.</div>
                         `;
                     }
-                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
                 } else {
-                    const lastMsg = messagesDiv.lastElementChild;
                     lastMsg.innerHTML = `
                         <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${question}</div>
                         <div class="text-red-600">Error: ${data.error || 'Unknown error'}</div>
                         <div class="text-xs text-gray-500 mt-2">Check browser console and server logs for details.</div>
                     `;
                 }
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
             } catch (error) {
                 console.error('Error asking question:', error);
                 const lastMsg = messagesDiv.lastElementChild;

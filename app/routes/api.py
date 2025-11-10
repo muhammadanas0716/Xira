@@ -58,13 +58,13 @@ def create_chat():
     chat = Chat(ticker=ticker, stock_info=stock_info, pdf_text=pdf_text)
     
     if pdf_text and llm_service.client:
-        print(f"Ingesting PDF text into LLM memory for chat {chat.id}")
-        conversation_messages = llm_service.ingest_pdf(pdf_text)
-        if conversation_messages:
-            chat.conversation_messages = conversation_messages
-            print(f"PDF successfully ingested into LLM memory")
+        print(f"Preparing PDF for chat {chat.id}, length: {len(pdf_text)} characters")
+        pdf_data = llm_service.ingest_pdf(pdf_text)
+        if pdf_data:
+            chat.conversation_messages = pdf_data
+            print(f"PDF prepared successfully")
         else:
-            print(f"WARNING: Failed to ingest PDF into LLM memory")
+            print(f"WARNING: Failed to prepare PDF")
     
     chats[chat.id] = chat
     
@@ -119,29 +119,19 @@ def ask_question(chat_id):
     
     chat = chats[chat_id]
     
-    if not chat.conversation_messages:
-        print(f"No conversation history available for chat {chat_id}")
-        if chat.pdf_text and llm_service.client:
-            print(f"Attempting to ingest PDF text now...")
-            conversation_messages = llm_service.ingest_pdf(chat.pdf_text)
-            if conversation_messages:
-                chat.conversation_messages = conversation_messages
-            else:
-                return jsonify({'error': 'Failed to initialize LLM memory with PDF text'}), 500
-        else:
-            return jsonify({'error': 'PDF text not available for this ticker. Please ensure the PDF was downloaded and extracted properly.'}), 400
+    if not chat.pdf_text:
+        return jsonify({'error': 'PDF text not available for this ticker. Please ensure the PDF was downloaded and extracted properly.'}), 400
     
     if not llm_service.client:
         return jsonify({'error': 'OpenAI API key not configured'}), 500
     
     print(f"Question: {question}")
-    print(f"Using conversation history with {len(chat.conversation_messages)} messages")
+    print(f"PDF text length: {len(chat.pdf_text)} characters")
+    print(f"Previous Q&A pairs: {len(chat.messages)}")
     
-    answer = llm_service.ask_question(chat.conversation_messages, question)
+    previous_qa = [{"question": msg["question"], "answer": msg["answer"]} for msg in chat.messages]
     
-    if answer:
-        chat.conversation_messages.append({"role": "user", "content": question})
-        chat.conversation_messages.append({"role": "assistant", "content": answer})
+    answer = llm_service.ask_question(chat.pdf_text, question, previous_qa)
     
     if not answer:
         return jsonify({'error': 'Failed to get answer from LLM'}), 500
