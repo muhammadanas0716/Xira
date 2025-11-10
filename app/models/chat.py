@@ -10,6 +10,8 @@ class Chat:
         self.pdf_text = pdf_text
         self.messages: List[Dict] = []
         self.conversation_messages: List[Dict] = []
+        self.generated_report: Optional[str] = None
+        self.report_generated_at: Optional[str] = None
     
     def to_dict(self) -> Dict:
         return {
@@ -18,7 +20,9 @@ class Chat:
             'created_at': self.created_at,
             'stock_info': self.stock_info,
             'pdf_text': self.pdf_text,
-            'messages': self.messages
+            'messages': self.messages,
+            'has_report': self.generated_report is not None,
+            'report_generated_at': self.report_generated_at
         }
     
     def add_message(self, question: str, answer: str):
@@ -29,6 +33,10 @@ class Chat:
         }
         self.messages.append(message)
         return message
+    
+    def set_report(self, report: str):
+        self.generated_report = report
+        self.report_generated_at = datetime.now().isoformat()
 
 chats: Dict[str, Chat] = {}
 

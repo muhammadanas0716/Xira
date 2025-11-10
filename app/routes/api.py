@@ -166,3 +166,50 @@ def download_pdf_api():
     else:
         return jsonify({'error': 'Failed to download PDF'}), 500
 
+@api_bp.route('/chats/<chat_id>/generate-report', methods=['POST'])
+def generate_report(chat_id):
+    if chat_id not in chats:
+        return jsonify({'error': 'Chat not found'}), 404
+    
+    chat = chats[chat_id]
+    
+    if not chat.pdf_text:
+        return jsonify({'error': 'PDF text not available for this ticker. Please ensure the PDF was downloaded and extracted properly.'}), 400
+    
+    if not llm_service.client:
+        return jsonify({'error': 'OpenAI API key not configured'}), 500
+    
+    print(f"Generating report for chat {chat_id}, ticker: {chat.ticker}")
+    print(f"PDF text length: {len(chat.pdf_text)} characters")
+    
+    report = llm_service.generate_report(chat.pdf_text, chat.ticker, chat.stock_info)
+    
+    if not report:
+        return jsonify({'error': 'Failed to generate report from LLM'}), 500
+    
+    chat.set_report(report)
+    message = chat.add_message("Generate comprehensive report", report)
+    
+    return jsonify({
+        'message': message,
+        'report': report,
+        'report_generated_at': chat.report_generated_at
+    })
+
+@api_bp.route('/chats/<chat_id>/report', methods=['GET'])
+def get_report(chat_id):
+    if chat_id not in chats:
+        return jsonify({'error': 'Chat not found'}), 404
+    
+    chat = chats[chat_id]
+    
+    if not chat.generated_report:
+        return jsonify({'error': 'No report generated for this chat'}), 404
+    
+    return jsonify({
+        'report': chat.generated_report,
+        'report_generated_at': chat.report_generated_at,
+        'ticker': chat.ticker,
+        'stock_info': chat.stock_info
+    })
+
