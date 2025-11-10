@@ -1,0 +1,9 @@
+sec-api
+python-dotenv
+flask
+flask-cors
+yfinance
+PyPDF2
+pdfplumber
+openai
+

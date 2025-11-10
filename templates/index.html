@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fira</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        .sidebar-item {
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-item:hover {
+            transform: translateX(2px);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .pulse-slow {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .pdf-container {
+            height: calc(100vh - 200px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: #f5f5f5;
+        }
+
+        .pdf-page {
+            margin: 10px auto;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            background: white;
+            display: block;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        #pdfViewer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100%;
+        }
+        
+        #pdfViewer.hidden {
+            display: none !important;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .btn-primary {
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .input-focus:focus {
+            transform: scale(1.01);
+            transition: transform 0.2s ease;
+        }
+
+        .history-item {
+            transition: all 0.2s ease;
+        }
+
+        .history-item:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+            transform: translateX(4px);
+        }
+
+        .table-row {
+            transition: background-color 0.15s ease;
+        }
+
+        .table-row:hover {
+            background-color: #f9fafb;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .resize-handle {
+            width: 4px;
+            height: 100%;
+            background: #e5e7eb;
+            cursor: col-resize;
+            transition: background 0.2s ease;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .resize-handle:hover {
+            background: #3b82f6;
+        }
+
+        .resize-handle::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 2px;
+            height: 40px;
+            background: #9ca3af;
+            border-radius: 2px;
+        }
+
+        .resize-handle:hover::before {
+            background: #3b82f6;
+        }
+
+        .resizing {
+            user-select: none;
+        }
+
+        body.resizing {
+            cursor: col-resize;
+        }
+
+        .sidebar-collapsed {
+            width: 0 !important;
+            overflow: hidden;
+            border: none;
+        }
+
+        .sidebar-toggle {
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background-color: #f3f4f6;
+        }
+
+        .sidebar-reopen-btn {
+            position: fixed;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 50;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-left: none;
+            border-radius: 0 12px 12px 0;
+            padding: 12px 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-reopen-btn:hover {
+            background: #f9fafb;
+            box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .sidebar-reopen-btn.hidden {
+            display: none;
+        }
+
+        .markdown-content {
+            line-height: 1.7;
+        }
+
+        .markdown-content h1,
+        .markdown-content h2,
+        .markdown-content h3,
+        .markdown-content h4 {
+            font-weight: 700;
+            margin-top: 1.5em;
+            margin-bottom: 0.75em;
+            color: #111827;
+        }
+
+        .markdown-content h1 {
+            font-size: 1.875rem;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 0.5em;
+        }
+
+        .markdown-content h2 {
+            font-size: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 0.5em;
+        }
+
+        .markdown-content h3 {
+            font-size: 1.25rem;
+        }
+
+        .markdown-content h4 {
+            font-size: 1.125rem;
+        }
+
+        .markdown-content p {
+            margin-bottom: 1em;
+        }
+
+        .markdown-content ul,
+        .markdown-content ol {
+            margin-left: 1.5em;
+            margin-bottom: 1em;
+        }
+
+        .markdown-content li {
+            margin-bottom: 0.5em;
+        }
+
+        .markdown-content ul {
+            list-style-type: disc;
+        }
+
+        .markdown-content ol {
+            list-style-type: decimal;
+        }
+
+        .markdown-content strong {
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .markdown-content em {
+            font-style: italic;
+        }
+
+        .markdown-content code {
+            background-color: #f3f4f6;
+            padding: 0.125rem 0.375rem;
+            border-radius: 0.25rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875em;
+        }
+
+        .markdown-content pre {
+            background-color: #f3f4f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin-bottom: 1em;
+        }
+
+        .markdown-content pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+
+        .markdown-content blockquote {
+            border-left: 4px solid #3b82f6;
+            padding-left: 1rem;
+            margin-left: 0;
+            margin-bottom: 1em;
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .markdown-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1em;
+        }
+
+        .markdown-content th,
+        .markdown-content td {
+            border: 1px solid #e5e7eb;
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        .markdown-content th {
+            background-color: #f9fafb;
+            font-weight: 600;
+        }
+
+        .markdown-content hr {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 2em 0;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+    <div class="flex h-screen overflow-hidden">
+        <aside id="sidebar"
+            class="w-64 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 overflow-hidden">
+            <div class="p-6 fade-in flex items-center justify-between">
+                <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Fira</h1>
+                <button onclick="toggleSidebar()"
+                    class="sidebar-toggle p-2 rounded-lg text-gray-400 hover:text-gray-600">
+                    <svg id="sidebarToggleIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="px-4 mb-6 fade-in">
+                <button onclick="openNewChatModal()"
+                    class="w-full bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all btn-primary">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Start new chat
+                </button>
+            </div>
+
+            <nav class="px-4 mb-6 space-y-1 fade-in">
+                <a href="#"
+                    class="sidebar-item flex items-center gap-3 py-2.5 px-3 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
+                        </path>
+                    </svg>
+                    <span class="font-medium">Companies House</span>
+                </a>
+                <a href="#"
+                    class="sidebar-item flex items-center gap-3 py-2.5 px-3 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                        </path>
+                    </svg>
+                    <span class="font-medium">Your Documents</span>
+                </a>
+                <a href="#"
+                    class="sidebar-item flex items-center gap-3 py-2.5 px-3 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                        </path>
+                    </svg>
+                    <span class="font-medium">Reports</span>
+                </a>
+            </nav>
+
+            <div class="px-4 mb-6 fade-in flex-1 overflow-y-auto scrollbar-hide">
+                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">HISTORY</h2>
+                <div id="chatHistory" class="space-y-1">
+                    <div
+                        class="history-item flex items-center gap-2 py-2.5 px-3 rounded-xl bg-blue-50 cursor-pointer border border-blue-100">
+                        <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path
+                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z">
+                            </path>
+                        </svg>
+                        <span class="text-sm text-gray-800 font-medium truncate">what is inorganic strategy...</span>
+                    </div>
+                    <div class="history-item flex items-center gap-2 py-2.5 px-3 rounded-xl cursor-pointer">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
+                        <span class="text-sm text-gray-700 truncate">financial analysis Q3</span>
+                    </div>
+                    <div class="history-item flex items-center gap-2 py-2.5 px-3 rounded-xl cursor-pointer">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
+                        <span class="text-sm text-gray-700 truncate">revenue breakdown</span>
+                    </div>
+                    <div class="history-item flex items-center gap-2 py-2.5 px-3 rounded-xl cursor-pointer">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
+                        <span class="text-sm text-gray-700 truncate">cash flow analysis</span>
+                    </div>
+                    <div class="history-item flex items-center gap-2 py-2.5 px-3 rounded-xl cursor-pointer">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
+                        <span class="text-sm text-gray-700 truncate">market share trends</span>
+                    </div>
+                    <div class="history-item flex items-center gap-2 py-2.5 px-3 rounded-xl cursor-pointer">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
+                        <span class="text-sm text-gray-700 truncate">competitor comparison</span>
+                    </div>
+                    <div class="history-item flex items-center gap-2 py-2.5 px-3 rounded-xl cursor-pointer">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
+                        <span class="text-sm text-gray-700 truncate">earnings forecast</span>
+                    </div>
+                    <div class="history-item flex items-center gap-2 py-2.5 px-3 rounded-xl cursor-pointer">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
+                        <span class="text-sm text-gray-700 truncate">risk assessment</span>
+                    </div>
+                    <div class="history-item flex items-center gap-2 py-2.5 px-3 rounded-xl cursor-pointer">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
+                        <span class="text-sm text-gray-700 truncate">balance sheet review</span>
+                    </div>
+                    <div class="history-item flex items-center gap-2 py-2.5 px-3 rounded-xl cursor-pointer">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
+                        </svg>
+                        <span class="text-sm text-gray-700 truncate">growth strategy analysis</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-4 pb-6 fade-in">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4">
+                    <span class="text-xs font-bold text-yellow-800">FIRA IS IN BETA</span>
+                </div>
+                <p class="text-xs text-gray-500 mb-3 leading-relaxed">Share feedback to help us improve response
+                    accuracy</p>
+                <button
+                    class="w-full text-xs text-gray-600 hover:text-gray-900 py-2.5 px-3 rounded-xl hover:bg-gray-50 transition-all font-medium">
+                    Report a problem
+                </button>
+            </div>
+        </aside>
+
+        <button onclick="toggleSidebar()" id="sidebarReopenBtn" class="sidebar-reopen-btn hidden">
+            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16">
+                </path>
+            </svg>
+        </button>
+
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <div class="flex-1 overflow-y-auto p-8 scrollbar-hide">
+                <div class="max-w-4xl mx-auto fade-in">
+                    <div class="mb-8">
+                        <h2 class="text-3xl font-bold text-gray-900 mb-2">Ventient Energy Limited</h2>
+                        <p class="text-gray-600 text-lg">what is inorganic strategy of VEL?</p>
+                    </div>
+
+                    <div class="mb-8">
+                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">SOURCES ANALYZED</h3>
+                        <div class="space-y-2">
+                            <a href="#"
+                                class="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors group">
+                                <svg class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                    </path>
+                                </svg>
+                                Annual report and financial statements
+                            </a>
+                            <a href="#"
+                                class="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors group">
+                                <svg class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                    </path>
+                                </svg>
+                                Annual report and financial statements
+                            </a>
+                            <a href="#"
+                                class="flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors group">
+                                <svg class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                    </path>
+                                </svg>
+                                Annual report and financial statements
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="prose max-w-none mb-8">
+                        <p class="text-gray-700 leading-relaxed mb-6 text-base">
+                            VEL's inorganic strategy is focused on expanding the business through acquisitions.
+                            Specifically, the company considers expansion through acquisition as one of the options to
+                            grow its operating base alongside its organic initiatives such as life extension and
+                            repowering of existing assets <sup
+                                class="text-blue-600 font-semibold cursor-pointer hover:text-blue-700">1</sup> <sup
+                                class="text-blue-600 font-semibold cursor-pointer hover:text-blue-700">2</sup>.
+                        </p>
+
+                        <h4 class="text-xl font-bold text-gray-900 mb-5">present in the table the main opex lines with
+                            values for the past three years</h4>
+
+                        <div class="overflow-x-auto mb-6 rounded-xl border border-gray-200 shadow-sm">
+                            <table class="min-w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th
+                                            class="px-6 py-4 text-left text-sm font-bold text-gray-700 border-b border-gray-200">
+                                            Operating Expense Line</th>
+                                        <th
+                                            class="px-6 py-4 text-right text-sm font-bold text-gray-700 border-b border-gray-200">
+                                            FY2021 (£000)</th>
+                                        <th
+                                            class="px-6 py-4 text-right text-sm font-bold text-gray-700 border-b border-gray-200">
+                                            FY2022 (£000)</th>
+                                        <th
+                                            class="px-6 py-4 text-right text-sm font-bold text-gray-700 border-b border-gray-200">
+                                            FY2023 (£000)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white">
+                                    <tr class="table-row border-b border-gray-100">
+                                        <td class="px-6 py-4 text-sm text-gray-700 font-medium">Depreciation of
+                                            property, plant and equipment</td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">28,533 <sup
+                                                class="text-blue-600">1</sup></td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">32,145 <sup
+                                                class="text-blue-600">1</sup></td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">35,892 <sup
+                                                class="text-blue-600">1</sup></td>
+                                    </tr>
+                                    <tr class="table-row border-b border-gray-100">
+                                        <td class="px-6 py-4 text-sm text-gray-700 font-medium">Amortisation of
+                                            intangible fixed assets</td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">1,234 <sup
+                                                class="text-blue-600">1</sup></td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">1,456 <sup
+                                                class="text-blue-600">1</sup></td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">1,678 <sup
+                                                class="text-blue-600">1</sup></td>
+                                    </tr>
+                                    <tr class="table-row border-b border-gray-100">
+                                        <td class="px-6 py-4 text-sm text-gray-700 font-medium">Payments to landlords
+                                            for royalties</td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">5,678 <sup
+                                                class="text-blue-600">2</sup></td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">6,123 <sup
+                                                class="text-blue-600">2</sup></td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">6,789 <sup
+                                                class="text-blue-600">2</sup></td>
+                                    </tr>
+                                    <tr class="table-row">
+                                        <td class="px-6 py-4 text-sm text-gray-700 font-medium">Audit of financial
+                                            statements</td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">450 <sup
+                                                class="text-blue-600">1</sup></td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">475 <sup
+                                                class="text-blue-600">1</sup></td>
+                                        <td class="px-6 py-4 text-sm text-gray-900 text-right font-medium">500 <sup
+                                                class="text-blue-600">1</sup></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <p class="text-gray-600 text-sm leading-relaxed">
+                            This table presents the key operating expense lines as disclosed in the financial statements
+                            over the last three reporting years.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-200 p-4 bg-white shadow-lg">
+                <div class="max-w-4xl mx-auto relative">
+                    <input type="text" placeholder="Search or ask any question..."
+                        class="w-full pl-12 pr-16 py-3.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent input-focus shadow-sm">
+                    <svg class="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <button onclick="askQuestion()"
+                        class="absolute right-3 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-xl flex items-center justify-center transition-all btn-primary shadow-md">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <div class="resize-handle" id="resizeHandle"></div>
+        <aside class="bg-white border-l border-gray-200 flex flex-col shadow-lg slide-in" id="pdfSidebar"
+            style="width: 50%; min-width: 300px; max-width: 80%;">
+            <div class="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+                <h3 class="font-bold text-gray-900 text-lg">PDF Viewer</h3>
+                <button onclick="closePdfViewer()"
+                    class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="p-4 border-b border-gray-200 bg-gray-50">
+                <div class="flex gap-2">
+                    <input type="text" id="tickerInput" placeholder="Enter ticker (e.g., AAPL, TSLA)"
+                        class="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent input-focus shadow-sm"
+                        onkeypress="handleTickerKeyPress(event)">
+                    <button onclick="searchTicker()" id="searchBtn"
+                        class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all btn-primary shadow-md">
+                        Search
+                    </button>
+                </div>
+                <div id="errorMessage" class="mt-2 text-sm text-red-600 hidden"></div>
+                <div id="successMessage" class="mt-2 text-sm text-green-600 hidden"></div>
+            </div>
+
+            <div class="flex-1 overflow-hidden flex flex-col">
+                <div id="pdfControls"
+                    class="p-3 border-b border-gray-200 bg-gray-50 flex items-center justify-end hidden">
+                    <div class="flex items-center gap-2">
+                        <button onclick="zoomOut()"
+                            class="px-3 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
+                            −
+                        </button>
+                        <span id="zoomLevel" class="text-sm text-gray-700 font-medium w-12 text-center">100%</span>
+                        <button onclick="zoomIn()"
+                            class="px-3 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
+                            +
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pdf-container" id="pdfContainer">
+                    <div id="pdfPlaceholder" class="h-full flex items-center justify-center text-gray-400">
+                        <div class="text-center">
+                            <svg class="w-20 h-20 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                </path>
+                            </svg>
+                            <p class="text-sm font-medium">Search for a ticker to load PDF</p>
+                        </div>
+                    </div>
+                    <div id="pdfLoading" class="hidden h-full flex items-center justify-center">
+                        <div class="text-center">
+                            <div class="loading-spinner mx-auto mb-4"></div>
+                            <p class="text-sm text-gray-600 font-medium">Loading PDF...</p>
+                        </div>
+                    </div>
+                    <div id="pdfViewer" class="hidden" style="display: none;"></div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        marked.setOptions({
+            breaks: true,
+            gfm: true
+        });
+
+        function renderMarkdown(text) {
+            if (!text) return '';
+            return marked.parse(text);
+        }
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        let pdfDoc = null;
+        let scale = 1.8;
+        const scaleDelta = 0.2;
+
+        async function renderAllPages() {
+            if (!pdfDoc) return;
+
+            const container = document.getElementById('pdfViewer');
+            container.innerHTML = '';
+
+            for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+                try {
+                    const page = await pdfDoc.getPage(pageNum);
+                    const viewport = page.getViewport({ scale: scale });
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    const renderContext = {
+                        canvasContext: ctx,
+                        viewport: viewport
+                    };
+
+                    await page.render(renderContext).promise;
+
+                    canvas.className = 'pdf-page';
+                    container.appendChild(canvas);
+                } catch (error) {
+                    console.error(`Error rendering page ${pageNum}:`, error);
+                }
+            }
+        }
+
+        function zoomIn() {
+            const newScale = Math.min(5.0, scale + scaleDelta);
+            if (newScale !== scale) {
+                scale = newScale;
+                renderAllPages();
+                updateZoomDisplay();
+            }
+        }
+
+        function zoomOut() {
+            const newScale = Math.max(0.25, scale - scaleDelta);
+            if (newScale !== scale) {
+                scale = newScale;
+                renderAllPages();
+                updateZoomDisplay();
+            }
+        }
+
+        function updateZoomDisplay() {
+            document.getElementById('zoomLevel').textContent = Math.round(scale * 100) + '%';
+        }
+
+
+        async function loadPdfFromUrl(url) {
+            console.log('Loading PDF from URL:', url);
+            document.getElementById('pdfPlaceholder').classList.add('hidden');
+            document.getElementById('pdfLoading').classList.remove('hidden');
+            document.getElementById('pdfViewer').classList.add('hidden');
+            document.getElementById('pdfControls').classList.add('hidden');
+
+            try {
+                console.log('Fetching PDF as blob...');
+                const response = await fetch(url);
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        console.warn('PDF file not found:', url);
+                        document.getElementById('pdfLoading').classList.add('hidden');
+                        document.getElementById('pdfPlaceholder').classList.remove('hidden');
+                        showError('PDF file not found. The file may not have been downloaded yet.');
+                        return;
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                console.log('PDF fetched, converting to array buffer...');
+                const arrayBuffer = await response.arrayBuffer();
+                console.log('Array buffer size:', arrayBuffer.byteLength);
+                
+                const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                const pdf = await loadingTask.promise;
+                
+                console.log('PDF loaded, pages:', pdf.numPages);
+                pdfDoc = pdf;
+                scale = 1.8;
+                updateZoomDisplay();
+                
+                await renderAllPages();
+                
+                console.log('All pages rendered');
+                const pdfViewer = document.getElementById('pdfViewer');
+                const pdfLoading = document.getElementById('pdfLoading');
+                const pdfControls = document.getElementById('pdfControls');
+                
+                pdfLoading.classList.add('hidden');
+                pdfViewer.classList.remove('hidden');
+                pdfViewer.style.display = 'flex';
+                pdfControls.classList.remove('hidden');
+                
+                console.log('PDF viewer visible:', !pdfViewer.classList.contains('hidden'));
+                console.log('PDF viewer children:', pdfViewer.children.length);
+                console.log('PDF viewer style display:', pdfViewer.style.display);
+            } catch (error) {
+                console.error('Error loading PDF:', error);
+                document.getElementById('pdfLoading').classList.add('hidden');
+                document.getElementById('pdfPlaceholder').classList.remove('hidden');
+                showError('Failed to load PDF: ' + error.message);
+            }
+        }
+
+        async function searchTicker() {
+            const ticker = document.getElementById('tickerInput').value.trim().toUpperCase();
+            if (!ticker) {
+                showError('Please enter a ticker symbol');
+                return;
+            }
+
+            hideMessages();
+            const searchBtn = document.getElementById('searchBtn');
+            searchBtn.disabled = true;
+            searchBtn.textContent = 'Loading...';
+
+            const filename = `${ticker}_latest_10Q.pdf`;
+            const filepath = `/pdfs/${filename}`;
+
+            try {
+                const response = await fetch(filepath, { method: 'HEAD' });
+                if (response.ok) {
+                    loadPdfFromUrl(filepath);
+                    showSuccess('PDF loaded successfully');
+                } else {
+                    const downloadResponse = await fetch('/api/download-pdf', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ticker: ticker })
+                    });
+
+                    const data = await downloadResponse.json();
+                    if (downloadResponse.ok) {
+                        loadPdfFromUrl(`/pdfs/${data.filename}`);
+                        showSuccess(data.message || 'PDF downloaded and loaded');
+                    } else {
+                        showError(data.error || 'Failed to download PDF');
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showError('An error occurred. Please try again.');
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.textContent = 'Search';
+            }
+        }
+
+        function handleTickerKeyPress(event) {
+            if (event.key === 'Enter') {
+                searchTicker();
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+            setTimeout(() => errorDiv.classList.add('hidden'), 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.classList.remove('hidden');
+            setTimeout(() => successDiv.classList.add('hidden'), 3000);
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').classList.add('hidden');
+            document.getElementById('successMessage').classList.add('hidden');
+        }
+
+        function closePdfViewer() {
+            document.getElementById('tickerInput').value = '';
+            const pdfViewer = document.getElementById('pdfViewer');
+            pdfViewer.classList.add('hidden');
+            pdfViewer.style.display = 'none';
+            document.getElementById('pdfControls').classList.add('hidden');
+            document.getElementById('pdfLoading').classList.add('hidden');
+            document.getElementById('pdfPlaceholder').classList.remove('hidden');
+            pdfDoc = null;
+            hideMessages();
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const icon = document.getElementById('sidebarToggleIcon');
+            const reopenBtn = document.getElementById('sidebarReopenBtn');
+            sidebar.classList.toggle('sidebar-collapsed');
+
+            if (sidebar.classList.contains('sidebar-collapsed')) {
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>';
+                reopenBtn.classList.remove('hidden');
+            } else {
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>';
+                reopenBtn.classList.add('hidden');
+            }
+        }
+
+        (function () {
+            const resizeHandle = document.getElementById('resizeHandle');
+            const pdfSidebar = document.getElementById('pdfSidebar');
+            let isResizing = false;
+            let startX = 0;
+            let startWidth = 0;
+
+            resizeHandle.addEventListener('mousedown', function (e) {
+                isResizing = true;
+                startX = e.clientX;
+                const computedWidth = window.getComputedStyle(pdfSidebar).width;
+                startWidth = parseFloat(computedWidth) || window.innerWidth * 0.5;
+                document.body.classList.add('resizing');
+                document.body.style.cursor = 'col-resize';
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', function (e) {
+                if (!isResizing) return;
+
+                const deltaX = e.clientX - startX;
+                const newWidthPx = startWidth - deltaX;
+                const newWidthPercent = (newWidthPx / window.innerWidth) * 100;
+                const minWidthPercent = (300 / window.innerWidth) * 100;
+                const maxWidthPercent = 80;
+
+                if (newWidthPercent >= minWidthPercent && newWidthPercent <= maxWidthPercent) {
+                    pdfSidebar.style.width = newWidthPercent + '%';
+                }
+            });
+
+            document.addEventListener('mouseup', function () {
+                if (isResizing) {
+                    isResizing = false;
+                    document.body.classList.remove('resizing');
+                    document.body.style.cursor = '';
+                }
+            });
+        })();
+
+        {% if pdfs %}
+        window.addEventListener('load', function () {
+            const firstPdf = '{{ pdfs[0] }}';
+            if (firstPdf) {
+                document.getElementById('tickerInput').value = firstPdf.replace('_latest_10Q.pdf', '');
+                loadPdfFromUrl(`/pdfs/${firstPdf}`);
+            }
+        });
+        {% endif %}
+
+        let currentChatId = null;
+
+        function openNewChatModal() {
+            document.getElementById('newChatModal').classList.remove('hidden');
+            document.getElementById('newChatTickerInput').focus();
+        }
+
+        function closeNewChatModal() {
+            document.getElementById('newChatModal').classList.add('hidden');
+            document.getElementById('newChatTickerInput').value = '';
+        }
+
+        async function createNewChat() {
+            const ticker = document.getElementById('newChatTickerInput').value.trim().toUpperCase();
+            if (!ticker) {
+                alert('Please enter a ticker symbol');
+                return;
+            }
+
+            const modal = document.getElementById('newChatModal');
+            const loadingDiv = modal.querySelector('.loading-indicator');
+            loadingDiv.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/create-chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticker: ticker })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    currentChatId = data.chat_id;
+                    console.log('Chat created:', data);
+                    console.log('PDF text length:', data.pdf_text_length);
+                    if (!data.has_pdf || data.pdf_text_length === 0) {
+                        alert(`Warning: PDF text extraction may have failed. PDF text length: ${data.pdf_text_length || 0} characters. You may not be able to ask questions about the PDF.`);
+                    }
+                    loadChat(data.chat_id);
+                    closeNewChatModal();
+                    loadChatHistory();
+                    if (data.pdf_filename) {
+                        loadPdfFromUrl(`/pdfs/${data.pdf_filename}`);
+                    }
+                } else {
+                    alert(data.error || 'Failed to create chat');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            } finally {
+                loadingDiv.classList.add('hidden');
+            }
+        }
+
+        async function loadChat(chatId) {
+            try {
+                const response = await fetch(`/api/chats/${chatId}`);
+                const chat = await response.json();
+                
+                if (response.ok) {
+                    currentChatId = chatId;
+                    console.log('Chat loaded:', chat);
+                    console.log('PDF text length:', chat.pdf_text_length || 0);
+                    if (chat.pdf_text_preview) {
+                        console.log('PDF text preview:', chat.pdf_text_preview);
+                    }
+                    displayChat(chat);
+                    if (chat.pdf_filename) {
+                        loadPdfFromUrl(`/pdfs/${chat.pdf_filename}`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading chat:', error);
+            }
+        }
+
+        function displayChat(chat) {
+            const mainContent = document.querySelector('main .flex-1.overflow-y-auto');
+            const stockInfo = chat.stock_info;
+            
+            let html = `
+                <div class="max-w-4xl mx-auto fade-in">
+                    <div class="mb-8">
+                        <h2 class="text-3xl font-bold text-gray-900 mb-2">${stockInfo.name} (${stockInfo.ticker})</h2>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">Current Price</div>
+                                <div class="text-xl font-bold text-gray-900">$${stockInfo.currentPrice?.toFixed(2) || 'N/A'}</div>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">P/E Ratio</div>
+                                <div class="text-xl font-bold text-gray-900">${stockInfo.peRatio?.toFixed(2) || 'N/A'}</div>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">Market Cap</div>
+                                <div class="text-xl font-bold text-gray-900">${stockInfo.marketCap ? (stockInfo.marketCap / 1e9).toFixed(2) + 'B' : 'N/A'}</div>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl border border-gray-200">
+                                <div class="text-xs text-gray-500 mb-1">Sector</div>
+                                <div class="text-lg font-semibold text-gray-900">${stockInfo.sector || 'N/A'}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chatMessages" class="space-y-6">
+            `;
+
+            chat.messages.forEach(msg => {
+                html += `
+                    <div class="bg-white rounded-xl p-6 border border-gray-200">
+                        <div class="mb-3">
+                            <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${msg.question}</div>
+                            <div class="text-gray-700 leading-relaxed markdown-content">${renderMarkdown(msg.answer)}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div></div>`;
+            mainContent.innerHTML = html;
+        }
+
+        async function askQuestion() {
+            if (!currentChatId) {
+                alert('Please create a chat first');
+                return;
+            }
+
+            const input = document.querySelector('input[placeholder="Search or ask any question..."]');
+            const question = input.value.trim();
+            if (!question) return;
+
+            input.value = '';
+            const messagesDiv = document.getElementById('chatMessages');
+            
+            messagesDiv.innerHTML += `
+                <div class="bg-white rounded-xl p-6 border border-gray-200">
+                    <div class="text-sm font-semibold text-gray-900">Q: ${question}</div>
+                    <div class="mt-2 text-gray-500">Thinking...</div>
+                </div>
+            `;
+
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            try {
+                console.log('Asking question:', question);
+                const response = await fetch(`/api/chats/${currentChatId}/ask`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: question })
+                });
+
+                const data = await response.json();
+                console.log('Response:', data);
+                
+                if (response.ok) {
+                    const lastMsg = messagesDiv.lastElementChild;
+                    if (data.answer) {
+                        lastMsg.innerHTML = `
+                            <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${data.question}</div>
+                            <div class="text-gray-700 leading-relaxed markdown-content">${renderMarkdown(data.answer)}</div>
+                        `;
+                    } else {
+                        lastMsg.innerHTML = `
+                            <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${data.question}</div>
+                            <div class="text-yellow-600">No answer received from LLM. Check server logs.</div>
+                        `;
+                    }
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                } else {
+                    const lastMsg = messagesDiv.lastElementChild;
+                    lastMsg.innerHTML = `
+                        <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${question}</div>
+                        <div class="text-red-600">Error: ${data.error || 'Unknown error'}</div>
+                        <div class="text-xs text-gray-500 mt-2">Check browser console and server logs for details.</div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error asking question:', error);
+                const lastMsg = messagesDiv.lastElementChild;
+                lastMsg.innerHTML = `
+                    <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${question}</div>
+                    <div class="text-red-600">Network error: ${error.message}</div>
+                    <div class="text-xs text-gray-500 mt-2">Check browser console for details.</div>
+                `;
+            }
+        }
+
+        async function loadChatHistory() {
+            try {
+                const response = await fetch('/api/chats');
+                const chats = await response.json();
+                const historyDiv = document.getElementById('chatHistory');
+                
+                historyDiv.innerHTML = chats.map(chat => `
+                    <div onclick="loadChat('${chat.id}')" class="history-item flex items-center gap-2 py-2.5 px-3 rounded-xl cursor-pointer">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span class="text-sm text-gray-700 truncate">${chat.ticker}</span>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading chat history:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadChatHistory();
+            const searchInput = document.querySelector('input[placeholder="Search or ask any question..."]');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        askQuestion();
+                    }
+                });
+            }
+        });
+    </script>
+
+    <div id="newChatModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-900">Start New Chat</h3>
+                <button onclick="closeNewChatModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Enter Ticker Symbol</label>
+                <input 
+                    id="newChatTickerInput"
+                    type="text" 
+                    placeholder="e.g., AAPL, TSLA, MSFT" 
+                    class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onkeypress="if(event.key==='Enter') createNewChat()"
+                >
+            </div>
+            <div class="loading-indicator hidden mb-4 text-center text-gray-600">
+                Loading stock data and PDF...
+            </div>
+            <button 
+                onclick="createNewChat()" 
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-all"
+            >
+                Create Chat
+            </button>
+        </div>
+    </div>
+</body>
+
+</html>
