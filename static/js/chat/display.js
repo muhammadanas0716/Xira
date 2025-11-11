@@ -135,19 +135,33 @@ function displayChat(chat) {
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                         <div class="bg-white p-6 rounded-xl border border-gray-200">
                             <h3 class="text-lg font-bold text-gray-900 mb-4">Price Overview</h3>
+                            <p class="text-xs text-gray-500 mb-3">Daily price comparison with change indicators</p>
                             <canvas id="priceChart"></canvas>
                         </div>
                         <div class="bg-white p-6 rounded-xl border border-gray-200">
                             <h3 class="text-lg font-bold text-gray-900 mb-4">Valuation Ratios</h3>
+                            <p class="text-xs text-gray-500 mb-3">P/E, P/B, P/S ratios with color-coded valuation levels</p>
                             <canvas id="ratiosChart"></canvas>
                         </div>
                         <div class="bg-white p-6 rounded-xl border border-gray-200">
                             <h3 class="text-lg font-bold text-gray-900 mb-4">Performance Metrics</h3>
+                            <p class="text-xs text-gray-500 mb-3">Profitability and efficiency metrics comparison</p>
                             <canvas id="metricsChart"></canvas>
                         </div>
                         <div class="bg-white p-6 rounded-xl border border-gray-200">
-                            <h3 class="text-lg font-bold text-gray-900 mb-4">52 Week Range</h3>
+                            <h3 class="text-lg font-bold text-gray-900 mb-4">52 Week Range Position</h3>
+                            <p class="text-xs text-gray-500 mb-3">Current price position relative to 52-week high/low</p>
                             <canvas id="rangeChart"></canvas>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl border border-gray-200">
+                            <h3 class="text-lg font-bold text-gray-900 mb-4">Financial Health Score</h3>
+                            <p class="text-xs text-gray-500 mb-3">Key financial health indicators with performance thresholds</p>
+                            <canvas id="healthChart"></canvas>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl border border-gray-200">
+                            <h3 class="text-lg font-bold text-gray-900 mb-4">Liquidity & Debt Analysis</h3>
+                            <p class="text-xs text-gray-500 mb-3">Current ratio, quick ratio, and debt-to-equity comparison</p>
+                            <canvas id="liquidityChart"></canvas>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
@@ -199,6 +213,12 @@ function displayChat(chat) {
 
   html += `</div></div></div>`;
   mainContent.innerHTML = html;
+  
+  const markdownElements = mainContent.querySelectorAll('.markdown-content');
+  markdownElements.forEach(element => {
+    renderMath(element);
+  });
+  
   createCharts(stockInfo);
   
   if (isProcessingQuestion) {

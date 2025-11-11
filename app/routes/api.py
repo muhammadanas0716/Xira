@@ -50,20 +50,15 @@ def create_chat():
     else:
         print(f"WARNING: No PDF text extracted for {ticker}")
     
+    pdf_exists = os.path.exists(filepath)
+    
     chat = Chat(ticker=ticker, stock_info=stock_info, pdf_text=pdf_text)
     
-    if pdf_text and llm_service.client:
-        print(f"Preparing PDF for chat {chat.id}, length: {len(pdf_text)} characters")
-        pdf_data = llm_service.ingest_pdf(pdf_text)
-        if pdf_data:
-            chat.conversation_messages = pdf_data
-            print(f"PDF prepared successfully")
-        else:
-            print(f"WARNING: Failed to prepare PDF")
+    if pdf_text:
+        chat.get_pdf_message(is_continuation=False)
+        print(f"PDF message pre-cached for LLM, ready to answer questions")
     
     chats[chat.id] = chat
-    
-    pdf_exists = os.path.exists(filepath)
     
     return jsonify({
         'chat_id': chat.id,
@@ -121,12 +116,11 @@ def ask_question(chat_id):
         return jsonify({'error': 'OpenAI API key not configured'}), 500
     
     print(f"Question: {question}")
-    print(f"PDF text length: {len(chat.pdf_text)} characters")
     print(f"Previous Q&A pairs: {len(chat.messages)}")
     
     previous_qa = [{"question": msg["question"], "answer": msg["answer"]} for msg in chat.messages]
-    
-    answer = llm_service.ask_question(chat.pdf_text, question, previous_qa)
+    cached_pdf_message = chat.get_pdf_message(is_continuation=len(chat.messages) > 0)
+    answer = llm_service.ask_question(chat.pdf_text, question, previous_qa, cached_pdf_message=cached_pdf_message)
     
     if not answer:
         return jsonify({'error': 'Failed to get answer from LLM'}), 500

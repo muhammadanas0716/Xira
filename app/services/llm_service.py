@@ -3,13 +3,16 @@ from openai import OpenAI
 from app.utils.config import Config
 
 class LLMService:
+    _system_prompt_cache = None
+    
     def __init__(self):
         self.client = None
         if Config.OPENAI_API_KEY:
             self.client = OpenAI(api_key=Config.OPENAI_API_KEY)
     
     def get_system_prompt(self) -> str:
-        return """You are a financial analyst assistant. You analyze SEC filings (10-Q and 10-K reports) and answer questions clearly and concisely.
+        if LLMService._system_prompt_cache is None:
+            LLMService._system_prompt_cache = """You are a financial analyst assistant. You analyze SEC filings (10-Q and 10-K reports) and answer questions clearly and concisely.
 
 RESPONSE STYLE:
 - Keep answers short and to the point unless the user asks for detailed analysis
@@ -30,6 +33,75 @@ FORMATTING:
 - Use **bold** for key numbers and metrics
 - Choose the format that best presents the information - tables for comparisons, headings for organization, bullets for lists
 - Keep paragraphs short and readable"""
+        return LLMService._system_prompt_cache
+    
+    def upload_pdf_file(self, file_path: str) -> Optional[str]:
+        if not self.client:
+            return None
+        
+        try:
+            print(f"Uploading PDF file: {file_path}")
+            with open(file_path, 'rb') as f:
+                file = self.client.files.create(
+                    file=f,
+                    purpose='assistants'
+                )
+            print(f"File uploaded successfully, file_id: {file.id}")
+            return file.id
+        except Exception as e:
+            print(f"Error uploading file: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+    
+    def create_assistant(self, file_id: str, ticker: str) -> Optional[str]:
+        if not self.client:
+            return None
+        
+        try:
+            system_prompt = self.get_system_prompt()
+            print(f"Creating assistant for {ticker} with file_id: {file_id}")
+            
+            vector_store = self.client.beta.vector_stores.create(
+                name=f"SEC Filing - {ticker}",
+                file_ids=[file_id]
+            )
+            print(f"Vector store created, vector_store_id: {vector_store.id}")
+            
+            assistant = self.client.beta.assistants.create(
+                name=f"Financial Analyst - {ticker}",
+                instructions=system_prompt,
+                model="gpt-4o-mini",
+                tools=[{"type": "file_search"}],
+                tool_resources={
+                    "file_search": {
+                        "vector_store_ids": [vector_store.id]
+                    }
+                }
+            )
+            print(f"Assistant created successfully, assistant_id: {assistant.id}")
+            
+            return assistant.id
+        except Exception as e:
+            print(f"Error creating assistant: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+    
+    def create_thread(self) -> Optional[str]:
+        if not self.client:
+            return None
+        
+        try:
+            print("Creating thread...")
+            thread = self.client.beta.threads.create()
+            print(f"Thread created successfully, thread_id: {thread.id}")
+            return thread.id
+        except Exception as e:
+            print(f"Error creating thread: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
     
     def ingest_pdf(self, pdf_text: str) -> Optional[dict]:
         if not self.client:
@@ -38,21 +110,96 @@ FORMATTING:
         print(f"Preparing PDF for ingestion, length: {len(pdf_text)} characters")
         return {"pdf_text": pdf_text, "ingested": True}
     
-    def ask_question(self, pdf_text: str, question: str, previous_qa: list = None) -> Optional[str]:
+    def ask_question_with_assistant(self, thread_id: str, assistant_id: str, question: str) -> Optional[str]:
         if not self.client:
             return None
         
-        if not pdf_text:
+        if not thread_id or not assistant_id:
             return None
         
-        print(f"Asking question with PDF text ({len(pdf_text)} chars) and {len(previous_qa) if previous_qa else 0} previous Q&A pairs")
+        try:
+            formatted_question = f"""Question: {question}
+
+Answer concisely and clearly. Search the entire document (financial statements, MD&A, footnotes, tables).
+
+Format:
+- Use headings (##) to organize longer answers with multiple topics
+- Use tables when helpful: comparisons, financial metrics across periods, ratios, structured data
+- Use bullet points (-) for simple lists or when tables aren't needed
+- Use **bold** for key numbers
+- Choose the best format for each piece of information
+- Keep it short unless detailed analysis is needed
+
+If the answer isn't in the document, say so directly."""
+            
+            print(f"Adding message to thread {thread_id}...")
+            self.client.beta.threads.messages.create(
+                thread_id=thread_id,
+                role="user",
+                content=formatted_question
+            )
+            
+            print(f"Running assistant {assistant_id} on thread {thread_id}...")
+            run = self.client.beta.threads.runs.create(
+                thread_id=thread_id,
+                assistant_id=assistant_id
+            )
+            
+            print(f"Run created: {run.id}, status: {run.status}")
+            
+            while run.status in ['queued', 'in_progress', 'cancelling']:
+                import time
+                time.sleep(0.5)
+                run = self.client.beta.threads.runs.retrieve(
+                    thread_id=thread_id,
+                    run_id=run.id
+                )
+                print(f"Run status: {run.status}")
+            
+            if run.status == 'completed':
+                messages = self.client.beta.threads.messages.list(
+                    thread_id=thread_id,
+                    limit=1
+                )
+                
+                if messages.data:
+                    message = messages.data[0]
+                    if message.content[0].type == 'text':
+                        answer = message.content[0].text.value
+                        print(f"Answer received, length: {len(answer)} characters")
+                        return answer
+                
+                print("No text content found in response")
+                return None
+            else:
+                print(f"Run failed with status: {run.status}")
+                if run.last_error:
+                    print(f"Error: {run.last_error}")
+                return None
+                
+        except Exception as e:
+            print(f"Error asking question with assistant: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+    
+    def ask_question(self, pdf_text: str, question: str, previous_qa: list = None, cached_pdf_message: str = None) -> Optional[str]:
+        if not self.client:
+            return None
+        
+        if not pdf_text and not cached_pdf_message:
+            return None
+        
+        print(f"Asking question with PDF text ({len(pdf_text) if pdf_text else 0} chars) and {len(previous_qa) if previous_qa else 0} previous Q&A pairs")
         
         try:
             system_prompt = self.get_system_prompt()
             
             messages = [{"role": "system", "content": system_prompt}]
             
-            if previous_qa and len(previous_qa) > 0:
+            if cached_pdf_message:
+                pdf_message = cached_pdf_message
+            elif previous_qa and len(previous_qa) > 0:
                 pdf_message = f"""SEC filing document (same as previous conversation):
 
 {pdf_text}"""
@@ -84,9 +231,9 @@ If the answer isn't in the document, say so directly."""})
             
             print(f"Calling OpenAI API with {len(messages)} messages...")
             response = self.client.chat.completions.create(
-                model="gpt-5-nano",
+                model="gpt-4o-mini",
                 messages=messages,
-                max_completion_tokens=100_000
+                max_tokens=4000
             )
             
             answer = response.choices[0].message.content
@@ -100,23 +247,25 @@ If the answer isn't in the document, say so directly."""})
             traceback.print_exc()
             return None
     
-    def ask_question_stream(self, pdf_text: str, question: str, previous_qa: list = None) -> Generator[str, None, None]:
+    def ask_question_stream(self, pdf_text: str, question: str, previous_qa: list = None, cached_pdf_message: str = None) -> Generator[str, None, None]:
         if not self.client:
             yield "data: " + '{"error": "OpenAI client not initialized"}\n\n'
             return
         
-        if not pdf_text:
+        if not pdf_text and not cached_pdf_message:
             yield "data: " + '{"error": "PDF text not available"}\n\n'
             return
         
-        print(f"Streaming question with PDF text ({len(pdf_text)} chars) and {len(previous_qa) if previous_qa else 0} previous Q&A pairs")
+        print(f"Streaming question with PDF text ({len(pdf_text) if pdf_text else 0} chars) and {len(previous_qa) if previous_qa else 0} previous Q&A pairs")
         
         try:
             system_prompt = self.get_system_prompt()
             
             messages = [{"role": "system", "content": system_prompt}]
             
-            if previous_qa and len(previous_qa) > 0:
+            if cached_pdf_message:
+                pdf_message = cached_pdf_message
+            elif previous_qa and len(previous_qa) > 0:
                 pdf_message = f"""SEC filing document (same as previous conversation):
 
 {pdf_text}"""

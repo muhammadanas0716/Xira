@@ -6,6 +6,10 @@ main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
 def index():
+    return render_template('landing.html')
+
+@main_bp.route('/betaDashboard')
+def beta_dashboard():
     pdfs = []
     if os.path.exists(Config.DOWNLOADS_DIR):
         pdfs = [f for f in os.listdir(Config.DOWNLOADS_DIR) if f.endswith('.pdf')]

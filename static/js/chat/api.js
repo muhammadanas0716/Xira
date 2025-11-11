@@ -1,60 +1,5 @@
 let currentChatId = null;
 
-async function searchTicker() {
-  const ticker = document
-    .getElementById("tickerInput")
-    .value.trim()
-    .toUpperCase();
-  if (!ticker) {
-    showError("Please enter a ticker symbol");
-    return;
-  }
-
-  hideMessages();
-  const searchBtn = document.getElementById("searchBtn");
-  searchBtn.disabled = true;
-  searchBtn.textContent = "Loading...";
-
-  try {
-    const response = await fetch("/api/create-chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ticker: ticker }),
-    });
-
-    const data = await response.json();
-    if (response.ok) {
-      currentChatId = data.chat_id;
-      showSuccess(`Analysis started for ${ticker}`);
-
-      loadChat(data.chat_id);
-      loadChatHistory();
-
-      if (data.pdf_filename) {
-        setTimeout(() => {
-          loadPdfFromUrl(`/pdfs/${data.pdf_filename}`);
-        }, 500);
-      } else {
-        showError("PDF not available for this ticker yet.");
-      }
-    } else {
-      showError(data.error || "Failed to load ticker");
-    }
-  } catch (error) {
-    console.error("Error:", error);
-    showError("An error occurred. Please try again.");
-  } finally {
-    searchBtn.disabled = false;
-    searchBtn.textContent = "Search";
-  }
-}
-
-function handleTickerKeyPress(event) {
-  if (event.key === "Enter") {
-    searchTicker();
-  }
-}
-
 async function createNewChat() {
   const ticker = document
     .getElementById("newChatTickerInput")
@@ -263,6 +208,10 @@ async function askQuestion() {
                       data.answer
                     )}</div>
                 `;
+        const markdownContent = lastMsg.querySelector('.markdown-content');
+        if (markdownContent) {
+          renderMath(markdownContent);
+        }
       } else {
         lastMsg.innerHTML = `
                     <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${data.question}</div>

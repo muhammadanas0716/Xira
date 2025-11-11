@@ -346,6 +346,20 @@ body.resizing {
     margin: 2em 0;
 }
 
+.markdown-content .katex {
+    font-size: 1.1em;
+}
+
+.markdown-content .katex-display {
+    margin: 1em 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.markdown-content .katex-display > .katex {
+    white-space: nowrap;
+}
+
 .tab-button {
     transition: all 0.2s ease;
 }

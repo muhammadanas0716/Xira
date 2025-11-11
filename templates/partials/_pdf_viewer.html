@@ -10,24 +10,9 @@
         </button>
     </div>
 
-    <div class="p-4 border-b border-gray-200 bg-gray-50">
-        <div class="flex gap-2">
-            <input type="text" id="tickerInput" placeholder="Enter ticker (e.g., AAPL, TSLA)"
-                class="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent input-focus shadow-sm"
-                onkeypress="handleTickerKeyPress(event)">
-            <button onclick="searchTicker()" id="searchBtn"
-                class="px-6 py-2.5 bg-black hover:bg-gray-800 text-white font-semibold rounded-xl transition-all btn-primary shadow-md">
-                Search
-            </button>
-        </div>
-        <div id="errorMessage" class="mt-2 text-sm text-red-600 hidden"></div>
-        <div id="successMessage" class="mt-2 text-sm text-green-600 hidden"></div>
-    </div>
-
     <div class="flex-1 overflow-hidden flex flex-col">
         <div id="pdfControls"
-            class="p-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between hidden">
-            <div id="pageDisplay" class="text-sm text-gray-600 font-medium">Page 1 of 1</div>
+            class="p-3 border-b border-gray-200 bg-gray-50 flex items-center justify-end hidden">
             <div class="flex items-center gap-2">
                 <button onclick="zoomOut()"
                     class="px-3 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
@@ -50,7 +35,7 @@
                             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
                         </path>
                     </svg>
-                    <p class="text-sm font-medium">Search for a ticker to load PDF</p>
+                    <p class="text-sm font-medium">PDF will appear here when available</p>
                 </div>
             </div>
             <div id="pdfLoading" class="hidden h-full flex items-center justify-center">

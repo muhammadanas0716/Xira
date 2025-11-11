@@ -4,8 +4,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 let pdfDoc = null;
 let scale = 1.2;
 const scaleDelta = 0.2;
-let currentPage = 1;
-let totalPages = 0;
 
 async function renderAllPages() {
   if (!pdfDoc) return;
@@ -30,7 +28,6 @@ async function renderAllPages() {
       await page.render(renderContext).promise;
 
       canvas.className = "pdf-page";
-      canvas.setAttribute("data-page-number", pageNum);
       container.appendChild(canvas);
     } catch (error) {
       console.error(`Error rendering page ${pageNum}:`, error);
@@ -81,11 +78,8 @@ async function loadPdfFromUrl(url) {
 
     console.log("PDF loaded, pages:", pdf.numPages);
     pdfDoc = pdf;
-    totalPages = pdf.numPages;
-    currentPage = 1;
     scale = 1.2;
     updateZoomDisplay();
-    updatePageDisplay();
 
     await renderAllPages();
 
@@ -96,8 +90,6 @@ async function loadPdfFromUrl(url) {
     pdfViewer.classList.remove("hidden");
     pdfViewer.style.display = "flex";
     pdfControls.classList.remove("hidden");
-
-    setupPageTracking();
 
     pdfContainer.scrollTop = 0;
 
@@ -115,7 +107,6 @@ async function loadPdfFromUrl(url) {
 }
 
 function closePdfViewer() {
-  document.getElementById("tickerInput").value = "";
   const pdfViewer = document.getElementById("pdfViewer");
   pdfViewer.classList.add("hidden");
   pdfViewer.style.display = "none";

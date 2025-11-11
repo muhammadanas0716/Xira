@@ -41,6 +41,10 @@ async function generateReport() {
                     )}</div>
                 </div>
             `;
+      const reportContent = document.getElementById("generatedReport");
+      if (reportContent) {
+        renderMath(reportContent);
+      }
       lastMsg.classList.add("report-container");
       document.getElementById("exportReportBtn").classList.remove("hidden");
       await loadChat(currentChatId);
