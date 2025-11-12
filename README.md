@@ -1,7 +1,7 @@
-# Fira - Financial Research Assistant
+# Xira - Financial Research Assistant
 
 <div align="center">
-  <img src="static/images/logo.png" alt="Fira Logo" width="120" height="120">
+  <img src="static/images/logo.png" alt="Xira Logo" width="120" height="120">
 </div>
 
 A Flask-based web application for analyzing stock tickers, downloading SEC 10-Q reports, and asking questions about them using AI.
@@ -9,7 +9,7 @@ A Flask-based web application for analyzing stock tickers, downloading SEC 10-Q 
 ## Project Structure
 
 ```
-Fira 2.0/
+Xira 2.0/
 ├── app/
 │   ├── __init__.py          # Flask app factory
 │   ├── routes/              # Route handlers
@@ -87,4 +87,87 @@ Fira 2.0/
 - OpenAI GPT-3.5 - LLM for Q&A
 - pdfplumber - PDF text extraction
 - Tailwind CSS - Styling
+
+## Deployment
+
+### Using Docker
+
+1. **Build the Docker image:**
+   ```bash
+   docker build -t xira-app .
+   ```
+
+2. **Run the container:**
+   ```bash
+   docker run -d \
+     -p 5000:5000 \
+     -e SECRET_KEY=your-secret-key \
+     -e SEC_API_KEY=your-sec-api-key \
+     -e OPENAI_API_KEY=your-openai-api-key \
+     -e POLYGON_API_KEY=your-polygon-api-key \
+     -v $(pwd)/downloads:/app/downloads \
+     --name xira-app \
+     xira-app
+   ```
+
+### Using Docker Compose
+
+1. **Create a `.env` file** with your environment variables:
+   ```
+   SECRET_KEY=your-secret-key-here-change-in-production
+   SEC_API_KEY=your-sec-api-key
+   OPENAI_API_KEY=your-openai-api-key
+   POLYGON_API_KEY=your-polygon-api-key
+   DOWNLOADS_DIR=downloads
+   ```
+
+2. **Start the application:**
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **View logs:**
+   ```bash
+   docker-compose logs -f
+   ```
+
+4. **Stop the application:**
+   ```bash
+   docker-compose down
+   ```
+
+### Production Deployment
+
+For production, use Gunicorn directly:
+
+1. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Set environment variables:**
+   ```bash
+   export SECRET_KEY=your-secret-key
+   export SEC_API_KEY=your-sec-api-key
+   export OPENAI_API_KEY=your-openai-api-key
+   export POLYGON_API_KEY=your-polygon-api-key
+   export PORT=5000
+   ```
+
+3. **Run with Gunicorn:**
+   ```bash
+   gunicorn -c gunicorn.conf.py run:app
+   ```
+
+### Environment Variables
+
+- `SECRET_KEY` - Flask secret key (required)
+- `SEC_API_KEY` - SEC API key (required)
+- `OPENAI_API_KEY` - OpenAI API key (required)
+- `POLYGON_API_KEY` - Polygon API key (required)
+- `DOWNLOADS_DIR` - Directory for downloaded PDFs (default: `downloads`)
+- `PORT` - Port to run the application on (default: `5000`)
+- `FLASK_DEBUG` - Enable debug mode (default: `False`)
+- `WORKERS` - Number of Gunicorn workers (default: auto-calculated)
+- `LOG_LEVEL` - Logging level (default: `info`)
 

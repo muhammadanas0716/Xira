@@ -1,4 +1,6 @@
 import os
+import re
+import uuid
 from flask import Blueprint, jsonify, request
 from app.models.chat import Chat, chats
 from app.services.stock_service import stock_service
@@ -9,17 +11,32 @@ from app.utils.config import Config
 
 api_bp = Blueprint('api', __name__)
 
+def validate_ticker(ticker):
+    if not ticker or len(ticker) > 10:
+        return False
+    return bool(re.match(r'^[A-Z0-9]{1,10}$', ticker))
+
+def sanitize_string(value, max_length=10000):
+    if not isinstance(value, str):
+        return None
+    if len(value) > max_length:
+        return None
+    return value.strip()
+
 @api_bp.route('/create-chat', methods=['POST'])
 def create_chat():
     data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid request'}), 400
+    
     ticker = data.get('ticker', '').strip().upper()
     
-    if not ticker:
-        return jsonify({'error': 'Ticker is required'}), 400
+    if not validate_ticker(ticker):
+        return jsonify({'error': 'Invalid ticker symbol'}), 400
     
     stock_info = stock_service.get_stock_info(ticker)
     if not stock_info:
-        return jsonify({'error': f'Failed to fetch stock information for {ticker}'}), 400
+        return jsonify({'error': 'Failed to fetch stock information'}), 400
     
     pdf_text = None
     filename = f"{ticker}_latest_10Q.pdf"
@@ -80,6 +97,9 @@ def list_chats():
 
 @api_bp.route('/chats/<chat_id>', methods=['GET'])
 def get_chat(chat_id):
+    if not chat_id or len(chat_id) > 100:
+        return jsonify({'error': 'Invalid chat ID'}), 400
+    
     if chat_id not in chats:
         return jsonify({'error': 'Chat not found'}), 404
     
@@ -88,6 +108,7 @@ def get_chat(chat_id):
     if response_data.get('pdf_text'):
         response_data['pdf_text_length'] = len(response_data['pdf_text'])
         response_data['pdf_text_preview'] = response_data['pdf_text'][:500]
+        del response_data['pdf_text']
     
     filename = f"{chat.ticker}_latest_10Q.pdf"
     filepath = os.path.join(Config.DOWNLOADS_DIR, filename)
@@ -98,11 +119,17 @@ def get_chat(chat_id):
 
 @api_bp.route('/chats/<chat_id>/ask', methods=['POST'])
 def ask_question(chat_id):
+    if not chat_id or len(chat_id) > 100:
+        return jsonify({'error': 'Invalid chat ID'}), 400
+    
     if chat_id not in chats:
         return jsonify({'error': 'Chat not found'}), 404
     
     data = request.get_json()
-    question = data.get('question', '').strip()
+    if not data:
+        return jsonify({'error': 'Invalid request'}), 400
+    
+    question = sanitize_string(data.get('question', ''), max_length=5000)
     
     if not question:
         return jsonify({'error': 'Question is required'}), 400
@@ -130,6 +157,9 @@ def ask_question(chat_id):
 
 @api_bp.route('/chats/<chat_id>/generate-report', methods=['POST'])
 def generate_report(chat_id):
+    if not chat_id or len(chat_id) > 100:
+        return jsonify({'error': 'Invalid chat ID'}), 400
+    
     if chat_id not in chats:
         return jsonify({'error': 'Chat not found'}), 404
     
@@ -160,6 +190,9 @@ def generate_report(chat_id):
 
 @api_bp.route('/chats/<chat_id>/report', methods=['GET'])
 def get_report(chat_id):
+    if not chat_id or len(chat_id) > 100:
+        return jsonify({'error': 'Invalid chat ID'}), 400
+    
     if chat_id not in chats:
         return jsonify({'error': 'Chat not found'}), 404
     

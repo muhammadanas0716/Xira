@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Xira{% endblock %}</title>
+    
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/logo.ico') }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='images/logo.ico') }}">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+        body.standalone-page {
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+        }
+        html {
+            overflow-y: auto !important;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 relative standalone-page">
+    <div class="relative z-10">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4">
+            <a href="/" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                <span class="font-medium">Return to Home</span>
+            </a>
+        </div>
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="bg-white border-t border-gray-200 py-6 px-8 mt-12 relative z-10">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <p class="text-sm text-gray-600">&copy; 2025 Xira. All rights reserved.</p>
+            </div>
+            <div class="flex items-center gap-6">
+                <a href="/privacy" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">Privacy</a>
+                <a href="/terms" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">Terms</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
+

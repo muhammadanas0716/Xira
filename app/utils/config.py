@@ -12,6 +12,9 @@ class Config:
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
     POLYGON_API_KEY = os.getenv('POLYGON_API_KEY')
     
+    DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    TESTING = os.getenv('TESTING', 'False').lower() == 'true'
+    
     @staticmethod
     def init_app(app):
         os.makedirs(Config.DOWNLOADS_DIR, exist_ok=True)

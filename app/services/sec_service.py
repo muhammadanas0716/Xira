@@ -1,4 +1,5 @@
 import os
+import re
 from typing import Optional
 from sec_api import QueryApi, PdfGeneratorApi
 from app.utils.config import Config
@@ -36,8 +37,12 @@ class SECService:
             print("PDF Generator API not available - SEC_API_KEY not configured")
             return None
         
-        if not filing_url:
+        if not filing_url or not isinstance(filing_url, str):
             print("No filing URL provided")
+            return None
+        
+        if not ticker or not re.match(r'^[A-Z0-9]{1,10}$', ticker):
+            print("Invalid ticker symbol")
             return None
         
         try:

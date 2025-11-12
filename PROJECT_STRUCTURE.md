@@ -3,7 +3,7 @@
 ## Directory Layout
 
 ```
-Fira 2.0/
+Xira 2.0/
 ├── app/                          # Main application package
 │   ├── __init__.py              # Flask app factory
 │   ├── routes/                  # Route handlers (URL endpoints)

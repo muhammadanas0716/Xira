@@ -30,12 +30,12 @@ function displayChat(chat) {
       (msg) => msg.question === "Generate comprehensive report"
     );
 
+  const safeName = escapeHtml(stockInfo.name || '');
+  const safeTicker = escapeHtml(stockInfo.ticker || '');
   let html = `
         <div class="max-w-6xl mx-auto fade-in">
             <div class="mb-6">
-                <h2 class="text-3xl font-bold text-gray-900 mb-2">${
-                  stockInfo.name
-                } (${stockInfo.ticker})</h2>
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">${safeName} (${safeTicker})</h2>
                 <div class="flex gap-2 mb-6 border-b border-gray-200">
                     <button onclick="switchTab('analysis')" id="analysisTab" class="tab-button px-6 py-3 font-semibold text-gray-900 border-b-2 border-black transition-all">
                         Analysis
@@ -128,7 +128,7 @@ function displayChat(chat) {
                                 </span>
                             </div>
                             <div class="text-lg font-semibold text-gray-900">${
-                              stockInfo.sector || "N/A"
+                              escapeHtml(stockInfo.sector || "N/A")
                             }</div>
                         </div>
                     </div>
@@ -191,6 +191,7 @@ function displayChat(chat) {
 
   chat.messages.forEach((msg) => {
     const isReport = msg.question === "Generate comprehensive report";
+    const safeQuestion = !isReport ? escapeHtml(msg.question || '') : '';
     html += `
             <div class="bg-white rounded-xl p-6 border border-gray-200 ${
               isReport ? "report-container" : ""
@@ -198,14 +199,14 @@ function displayChat(chat) {
                 <div class="mb-3">
                     ${
                       !isReport
-                        ? `<div class="text-sm font-semibold text-gray-900 mb-2">Q: ${msg.question}</div>`
+                        ? `<div class="text-sm font-semibold text-gray-900 mb-2">Q: ${safeQuestion}</div>`
                         : ""
                     }
                     <div class="text-gray-700 leading-relaxed markdown-content ${
                       isReport ? "report-content" : ""
                     }" ${
       isReport ? 'id="generatedReport"' : ""
-    }>${renderMarkdown(msg.answer)}</div>
+    }>${renderMarkdown(msg.answer || '')}</div>
                 </div>
             </div>
         `;

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Fira{% endblock %}</title>
+    <title>{% block title %}Xira{% endblock %}</title>
     
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/logo.ico') }}">
     <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='images/logo.ico') }}">
@@ -21,8 +21,8 @@
     
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-gray-50">
-    <div class="flex h-screen overflow-hidden">
+<body class="bg-gray-50 relative">
+    <div class="flex h-screen overflow-hidden relative z-10">
         {% include 'partials/_sidebar.html' %}
         
         <button onclick="toggleSidebar()" id="sidebarReopenBtn" class="sidebar-reopen-btn hidden">
@@ -42,6 +42,7 @@
 
     {% include 'partials/_modal.html' %}
 
+    <script src="{{ url_for('static', filename='js/utils/security.js') }}"></script>
     <script src="{{ url_for('static', filename='js/utils/markdown.js') }}"></script>
     <script src="{{ url_for('static', filename='js/pdf/viewer.js') }}"></script>
     <script src="{{ url_for('static', filename='js/pdf/controls.js') }}"></script>

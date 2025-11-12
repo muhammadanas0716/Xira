@@ -1,9 +1,10 @@
+import uuid
 from datetime import datetime
 from typing import Dict, List, Optional
 
 class Chat:
     def __init__(self, ticker: str, stock_info: Dict, pdf_text: Optional[str] = None):
-        self.id = f"{ticker}_{datetime.now().timestamp()}"
+        self.id = str(uuid.uuid4())
         self.ticker = ticker
         self.created_at = datetime.now().isoformat()
         self.stock_info = stock_info

@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - SEC_API_KEY=${SEC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - POLYGON_API_KEY=${POLYGON_API_KEY}
+      - DOWNLOADS_DIR=${DOWNLOADS_DIR:-downloads}
+    volumes:
+      - ./downloads:/app/downloads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+

@@ -1,12 +1,10 @@
 let currentChatId = null;
 
 async function createNewChat() {
-  const ticker = document
-    .getElementById("newChatTickerInput")
-    .value.trim()
-    .toUpperCase();
+  const tickerInput = document.getElementById("newChatTickerInput");
+  const ticker = sanitizeTicker(tickerInput.value);
   if (!ticker) {
-    alert("Please enter a ticker symbol");
+    alert("Please enter a valid ticker symbol");
     return;
   }
 
@@ -84,14 +82,18 @@ async function loadChatHistory() {
 
     historyDiv.innerHTML = chats
       .map(
-        (chat) => `
-            <div onclick="loadChat('${chat.id}')" class="history-item flex items-center gap-2 py-2.5 px-3 rounded-xl cursor-pointer">
+        (chat) => {
+          const safeId = sanitizeChatId(chat.id) || '';
+          const safeTicker = escapeHtml(chat.ticker || '');
+          return `
+            <div onclick="loadChat('${safeId}')" class="history-item flex items-center gap-2 py-2.5 px-3 rounded-xl cursor-pointer">
                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-                <span class="text-sm text-gray-700 truncate">${chat.ticker}</span>
+                <span class="text-sm text-gray-700 truncate">${safeTicker}</span>
             </div>
-        `
+        `;
+        }
       )
       .join("");
   } catch (error) {
@@ -141,8 +143,9 @@ function stopQuestion() {
   if (messagesDiv && messagesDiv.lastElementChild) {
     const lastMsg = messagesDiv.lastElementChild;
     const questionText = lastMsg.querySelector(".text-sm.font-semibold")?.textContent.replace("Q: ", "") || "Question";
+    const safeQuestion = escapeHtml(questionText);
     lastMsg.innerHTML = `
-      <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${questionText}</div>
+      <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${safeQuestion}</div>
       <div class="text-gray-500 italic">Request cancelled by user.</div>
     `;
   }
@@ -174,9 +177,10 @@ async function askQuestion() {
   isProcessingQuestion = true;
   updateSendButton(true);
 
+  const safeQuestion = escapeHtml(question);
   messagesDiv.innerHTML += `
         <div class="bg-white rounded-xl p-6 border border-gray-200">
-            <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${question}</div>
+            <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${safeQuestion}</div>
             <div class="text-gray-700 leading-relaxed markdown-content">Thinking...</div>
         </div>
     `;
@@ -200,10 +204,9 @@ async function askQuestion() {
     const lastMsg = messagesDiv.lastElementChild;
     if (response.ok) {
       if (data.answer) {
+        const safeQuestion = escapeHtml(data.question || question);
         lastMsg.innerHTML = `
-                    <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${
-                      data.question
-                    }</div>
+                    <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${safeQuestion}</div>
                     <div class="text-gray-700 leading-relaxed markdown-content">${renderMarkdown(
                       data.answer
                     )}</div>
@@ -213,17 +216,18 @@ async function askQuestion() {
           renderMath(markdownContent);
         }
       } else {
+        const safeQuestion = escapeHtml(data.question || question);
         lastMsg.innerHTML = `
-                    <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${data.question}</div>
+                    <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${safeQuestion}</div>
                     <div class="text-yellow-600">No answer received from LLM. Check server logs.</div>
                 `;
       }
     } else {
+      const safeQuestion = escapeHtml(question);
+      const safeError = escapeHtml(data.error || "Unknown error");
       lastMsg.innerHTML = `
-                <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${question}</div>
-                <div class="text-red-600">Error: ${
-                  data.error || "Unknown error"
-                }</div>
+                <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${safeQuestion}</div>
+                <div class="text-red-600">Error: ${safeError}</div>
                 <div class="text-xs text-gray-500 mt-2">Check browser console and server logs for details.</div>
             `;
     }
@@ -236,9 +240,11 @@ async function askQuestion() {
     console.error("Error asking question:", error);
     const lastMsg = messagesDiv.lastElementChild;
     if (lastMsg) {
+      const safeQuestion = escapeHtml(question);
+      const safeError = escapeHtml(error.message || "Network error");
       lastMsg.innerHTML = `
-            <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${question}</div>
-            <div class="text-red-600">Network error: ${error.message}</div>
+            <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${safeQuestion}</div>
+            <div class="text-red-600">Network error: ${safeError}</div>
             <div class="text-xs text-gray-500 mt-2">Check browser console for details.</div>
         `;
     }
