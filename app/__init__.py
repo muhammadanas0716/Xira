@@ -1,7 +1,10 @@
 from flask import Flask, render_template, request
 from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
 import os
 from app.utils.config import Config
+
+db = SQLAlchemy()
 
 def create_app():
     template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'templates'))
@@ -9,6 +12,9 @@ def create_app():
     
     app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
     app.config.from_object(Config)
+    app.config['PERMANENT_SESSION_LIFETIME'] = 86400
+    
+    db.init_app(app)
     
     allowed_origins = os.getenv('ALLOWED_ORIGINS', 'http://localhost:5000,http://localhost:5001').split(',')
     CORS(app, origins=allowed_origins, supports_credentials=True)
@@ -36,6 +42,9 @@ def create_app():
     @app.errorhandler(500)
     def internal_error(error):
         return render_template('500.html'), 500
+    
+    with app.app_context():
+        db.create_all()
     
     return app
 

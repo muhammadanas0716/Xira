@@ -1,8 +1,9 @@
 import os
 import re
 import uuid
-from flask import Blueprint, jsonify, request
-from app.models.chat import Chat, chats
+from flask import Blueprint, jsonify, request, session
+from app import db
+from app.models.chat import Chat, Message
 from app.services.stock_service import stock_service
 from app.services.sec_service import sec_service
 from app.services.pdf_service import pdf_service
@@ -69,13 +70,18 @@ def create_chat():
     
     pdf_exists = os.path.exists(filepath)
     
-    chat = Chat(ticker=ticker, stock_info=stock_info, pdf_text=pdf_text)
+    chat = Chat(
+        ticker=ticker,
+        stock_info=stock_info,
+        pdf_text=pdf_text
+    )
+    
+    db.session.add(chat)
+    db.session.commit()
     
     if pdf_text:
         chat.get_pdf_message(is_continuation=False)
         print(f"PDF message pre-cached for LLM, ready to answer questions")
-    
-    chats[chat.id] = chat
     
     return jsonify({
         'chat_id': chat.id,
@@ -88,22 +94,28 @@ def create_chat():
 
 @api_bp.route('/chats', methods=['GET'])
 def list_chats():
+    chats = Chat.query.order_by(Chat.created_at.desc()).all()
     return jsonify([{
         'id': chat.id,
         'ticker': chat.ticker,
-        'created_at': chat.created_at,
+        'created_at': chat.created_at.isoformat() if chat.created_at else None,
         'stock_info': chat.stock_info
-    } for chat in chats.values()])
+    } for chat in chats])
 
 @api_bp.route('/chats/<chat_id>', methods=['GET'])
 def get_chat(chat_id):
     if not chat_id or len(chat_id) > 100:
         return jsonify({'error': 'Invalid chat ID'}), 400
     
-    if chat_id not in chats:
+    try:
+        uuid.UUID(chat_id)
+    except ValueError:
+        return jsonify({'error': 'Invalid chat ID format'}), 400
+    
+    chat = Chat.query.get(chat_id)
+    if not chat:
         return jsonify({'error': 'Chat not found'}), 404
     
-    chat = chats[chat_id]
     response_data = chat.to_dict()
     if response_data.get('pdf_text'):
         response_data['pdf_text_length'] = len(response_data['pdf_text'])
@@ -122,7 +134,13 @@ def ask_question(chat_id):
     if not chat_id or len(chat_id) > 100:
         return jsonify({'error': 'Invalid chat ID'}), 400
     
-    if chat_id not in chats:
+    try:
+        uuid.UUID(chat_id)
+    except ValueError:
+        return jsonify({'error': 'Invalid chat ID format'}), 400
+    
+    chat = Chat.query.get(chat_id)
+    if not chat:
         return jsonify({'error': 'Chat not found'}), 404
     
     data = request.get_json()
@@ -134,8 +152,6 @@ def ask_question(chat_id):
     if not question:
         return jsonify({'error': 'Question is required'}), 400
     
-    chat = chats[chat_id]
-    
     if not chat.pdf_text:
         return jsonify({'error': 'PDF text not available for this ticker.'}), 400
     
@@ -145,7 +161,7 @@ def ask_question(chat_id):
     print(f"Question: {question}")
     print(f"Previous Q&A pairs: {len(chat.messages)}")
     
-    previous_qa = [{"question": msg["question"], "answer": msg["answer"]} for msg in chat.messages]
+    previous_qa = [{"question": msg.question, "answer": msg.answer} for msg in chat.messages]
     cached_pdf_message = chat.get_pdf_message(is_continuation=len(chat.messages) > 0)
     answer = llm_service.ask_question(chat.pdf_text, question, previous_qa, cached_pdf_message=cached_pdf_message)
     
@@ -153,17 +169,21 @@ def ask_question(chat_id):
         return jsonify({'error': 'Failed to get answer from LLM'}), 500
     
     message = chat.add_message(question, answer)
-    return jsonify(message)
+    return jsonify(message.to_dict())
 
 @api_bp.route('/chats/<chat_id>/generate-report', methods=['POST'])
 def generate_report(chat_id):
     if not chat_id or len(chat_id) > 100:
         return jsonify({'error': 'Invalid chat ID'}), 400
     
-    if chat_id not in chats:
-        return jsonify({'error': 'Chat not found'}), 404
+    try:
+        uuid.UUID(chat_id)
+    except ValueError:
+        return jsonify({'error': 'Invalid chat ID format'}), 400
     
-    chat = chats[chat_id]
+    chat = Chat.query.get(chat_id)
+    if not chat:
+        return jsonify({'error': 'Chat not found'}), 404
     
     if not chat.pdf_text:
         return jsonify({'error': 'PDF text not available for this ticker.'}), 400
@@ -183,9 +203,9 @@ def generate_report(chat_id):
     message = chat.add_message("Generate comprehensive report", report)
     
     return jsonify({
-        'message': message,
+        'message': message.to_dict(),
         'report': report,
-        'report_generated_at': chat.report_generated_at
+        'report_generated_at': chat.report_generated_at.isoformat() if chat.report_generated_at else None
     })
 
 @api_bp.route('/chats/<chat_id>/report', methods=['GET'])
@@ -193,18 +213,58 @@ def get_report(chat_id):
     if not chat_id or len(chat_id) > 100:
         return jsonify({'error': 'Invalid chat ID'}), 400
     
-    if chat_id not in chats:
-        return jsonify({'error': 'Chat not found'}), 404
+    try:
+        uuid.UUID(chat_id)
+    except ValueError:
+        return jsonify({'error': 'Invalid chat ID format'}), 400
     
-    chat = chats[chat_id]
+    chat = Chat.query.get(chat_id)
+    if not chat:
+        return jsonify({'error': 'Chat not found'}), 404
     
     if not chat.generated_report:
         return jsonify({'error': 'No report generated for this chat'}), 404
     
     return jsonify({
         'report': chat.generated_report,
-        'report_generated_at': chat.report_generated_at,
+        'report_generated_at': chat.report_generated_at.isoformat() if chat.report_generated_at else None,
         'ticker': chat.ticker,
         'stock_info': chat.stock_info
     })
 
+@api_bp.route('/validate-dashboard-pin', methods=['POST'])
+def validate_dashboard_pin():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid request'}), 400
+    
+    pin = sanitize_string(data.get('pin', ''), max_length=20)
+    
+    if not pin:
+        return jsonify({'error': 'PIN is required'}), 400
+    
+    if pin == Config.DASHBOARD_PIN:
+        session['dashboard_authenticated'] = True
+        session.permanent = True
+        return jsonify({'success': True, 'message': 'PIN validated successfully'})
+    else:
+        return jsonify({'error': 'Invalid PIN'}), 401
+
+@api_bp.route('/chats/<chat_id>', methods=['DELETE'])
+def delete_chat(chat_id):
+    if not chat_id or len(chat_id) > 100:
+        return jsonify({'error': 'Invalid chat ID'}), 400
+    
+    try:
+        uuid.UUID(chat_id)
+    except ValueError:
+        return jsonify({'error': 'Invalid chat ID format'}), 400
+    
+    chat = Chat.query.get(chat_id)
+    if not chat:
+        return jsonify({'error': 'Chat not found'}), 404
+    
+    db.session.delete(chat)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Chat deleted successfully'})

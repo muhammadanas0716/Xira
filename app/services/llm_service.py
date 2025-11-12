@@ -25,6 +25,7 @@ ACCURACY:
 - Financial data may appear in multiple places - check everywhere
 - If information isn't found, say so clearly
 - Always cite specific numbers when available
+- Don't hesitate to use values present in the file to perform calculations as needed (e.g., if total revenue is given for a quarter, calculate monthly averages; convert quarterly to annualized, derive per-share metrics from totals)
 
 FORMATTING:
 - Use headings (##) wisely to organize longer answers with multiple topics - don't overuse them for short responses
@@ -353,6 +354,7 @@ Company Information:
 
 **ANALYSIS REQUIREMENTS:**
 Review the entire document: financial statements, MD&A, footnotes, risk factors, and all sections.
+- Don't hesitate to use values present in the file to perform calculations as needed (e.g., if total revenue is given for a quarter, calculate monthly averages; convert quarterly to annualized, derive per-share metrics from totals, calculate ratios from provided figures)
 
 **REPORT STRUCTURE:**
 

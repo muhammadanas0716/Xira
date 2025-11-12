@@ -1,6 +1,6 @@
 import os
 import re
-from flask import Blueprint, render_template, send_from_directory, Response, make_response, request
+from flask import Blueprint, render_template, send_from_directory, Response, make_response, request, session, redirect, url_for
 from app.utils.config import Config
 
 main_bp = Blueprint('main', __name__)
@@ -17,10 +17,13 @@ def index():
 
 @main_bp.route('/betaDashboard')
 def beta_dashboard():
+    if not session.get('dashboard_authenticated', False):
+        return render_template('index.html', show_pin_modal=True, pdfs=[])
+    
     pdfs = []
     if os.path.exists(Config.DOWNLOADS_DIR):
         pdfs = [f for f in os.listdir(Config.DOWNLOADS_DIR) if f.endswith('.pdf') and sanitize_filename(f)]
-    return render_template('index.html', pdfs=pdfs)
+    return render_template('index.html', show_pin_modal=False, pdfs=pdfs)
 
 @main_bp.route('/pdfs/<filename>')
 def serve_pdf(filename):

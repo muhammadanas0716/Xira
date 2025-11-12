@@ -11,6 +11,16 @@ class Config:
     SEC_API_KEY = os.getenv('SEC_API_KEY')
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
     POLYGON_API_KEY = os.getenv('POLYGON_API_KEY')
+    DASHBOARD_PIN = os.getenv('DASHBOARD_PIN', '071600')
+    
+    DATABASE_URL = os.getenv('DATABASE_URL')
+    
+    SQLALCHEMY_DATABASE_URI = DATABASE_URL
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+    }
     
     DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     TESTING = os.getenv('TESTING', 'False').lower() == 'true'

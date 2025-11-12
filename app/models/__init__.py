@@ -1,4 +1,4 @@
-from app.models.chat import Chat, chats
+from app.models.chat import Chat, Message
 
-__all__ = ['Chat', 'chats']
+__all__ = ['Chat', 'Message']
 

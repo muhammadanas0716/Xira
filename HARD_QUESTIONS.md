@@ -193,6 +193,14 @@ This document contains challenging questions to test the AI's ability to analyze
 - Questions about footnotes and accounting policies test deep document understanding
 - Forward-looking questions test the AI's ability to infer implications from current data
 
+## Prompt Engineering Guidelines
+
+- When analyzing financial documents, don't hesitate to use values present in the file to perform calculations as needed
+- If total revenue is given for a quarter, calculate monthly averages or break down by period
+- Extract numerical values from tables, statements, and footnotes to derive additional insights through mathematical operations
+- Perform calculations like ratios, percentages, growth rates, and conversions using data directly from the document
+- Use provided figures to calculate derived metrics (e.g., monthly from quarterly, annualized from quarterly, per-share metrics from totals)
+
 ## Testing Strategy
 
 1. **Basic Extraction**: Start with questions requiring simple data extraction
@@ -201,4 +209,3 @@ This document contains challenging questions to test the AI's ability to analyze
 4. **Analysis**: Test deeper analytical thinking and interpretation
 5. **Synthesis**: Test ability to combine multiple data points into insights
 6. **Edge Cases**: Test with questions about missing data or ambiguous situations
-

@@ -10,6 +10,7 @@ services:
       - SEC_API_KEY=${SEC_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - POLYGON_API_KEY=${POLYGON_API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
       - DOWNLOADS_DIR=${DOWNLOADS_DIR:-downloads}
     volumes:
       - ./downloads:/app/downloads

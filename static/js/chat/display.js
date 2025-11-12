@@ -23,6 +23,14 @@ function switchTab(tabName) {
 
 function displayChat(chat) {
   const mainContent = document.querySelector("main .flex-1.overflow-y-auto");
+  const emptyState = document.getElementById("emptyState");
+  const chatContentContainer = document.getElementById("chatContentContainer");
+  const dashboardFooter = document.getElementById("dashboardFooter");
+  
+  if (emptyState) emptyState.classList.add("hidden");
+  if (chatContentContainer) chatContentContainer.classList.remove("hidden");
+  if (dashboardFooter) dashboardFooter.classList.remove("hidden");
+  
   const stockInfo = chat.stock_info;
   const hasReport =
     chat.has_report ||
@@ -213,9 +221,15 @@ function displayChat(chat) {
   });
 
   html += `</div></div></div>`;
-  mainContent.innerHTML = html;
   
-  const markdownElements = mainContent.querySelectorAll('.markdown-content');
+  if (chatContentContainer) {
+    chatContentContainer.innerHTML = html;
+  } else {
+    mainContent.innerHTML = html;
+  }
+  
+  const container = chatContentContainer || mainContent;
+  const markdownElements = container.querySelectorAll('.markdown-content');
   markdownElements.forEach(element => {
     renderMath(element);
   });
