@@ -15,9 +15,6 @@ class Chat(db.Model):
     pdf_text = db.Column(Text)
     generated_report = db.Column(Text)
     report_generated_at = db.Column(db.DateTime)
-    assistant_id = db.Column(db.String(255))
-    thread_id = db.Column(db.String(255))
-    file_id = db.Column(db.String(255))
     
     messages = db.relationship('Message', backref='chat', lazy=True, cascade='all, delete-orphan', order_by='Message.created_at')
     
@@ -30,10 +27,7 @@ class Chat(db.Model):
             'pdf_text': self.pdf_text,
             'messages': [msg.to_dict() for msg in self.messages],
             'has_report': self.generated_report is not None,
-            'report_generated_at': self.report_generated_at.isoformat() if self.report_generated_at else None,
-            'assistant_id': self.assistant_id,
-            'thread_id': self.thread_id,
-            'file_id': self.file_id
+            'report_generated_at': self.report_generated_at.isoformat() if self.report_generated_at else None
         }
     
     def add_message(self, question: str, answer: str):

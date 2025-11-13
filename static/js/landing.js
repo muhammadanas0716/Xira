@@ -1,11 +1,15 @@
 let demoChatId = null;
 let isProcessingDemo = false;
 let chatCreationPromise = null;
+let statAnimationStarted = false;
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeNavbar();
     initializeDemo();
     initializeScrollAnimations();
+    initializeStatAnimations();
+    initializeFeatureCards();
+    addEasterEggs();
     
     const demoInput = document.getElementById('demoChatInput');
     if (demoInput) {
@@ -13,6 +17,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.key === 'Enter') {
                 sendDemoMessage();
             }
+        });
+        
+        demoInput.addEventListener('focus', function() {
+            this.placeholder = 'Go ahead, ask me anything...';
+        });
+        
+        demoInput.addEventListener('blur', function() {
+            this.placeholder = 'Ask a question about Apple\'s financials... (e.g., \'What was their revenue?\')';
         });
     }
 });
@@ -32,6 +44,17 @@ function initializeNavbar() {
 }
 
 function initializeDemo() {
+    const input = document.getElementById('demoChatInput');
+    const sendButton = document.getElementById('demoSendButton');
+    
+    if (input) {
+        input.disabled = true;
+        input.placeholder = 'Readying demo...';
+    }
+    if (sendButton) {
+        sendButton.disabled = true;
+    }
+    
     chatCreationPromise = createDemoChat();
 }
 
@@ -47,14 +70,66 @@ async function createDemoChat() {
         if (response.ok) {
             demoChatId = data.chat_id;
             console.log('Demo chat created:', demoChatId);
+            showDemoReady();
             return demoChatId;
         } else {
             console.error('Failed to create demo chat:', data.error);
+            showDemoError();
             return null;
         }
     } catch (error) {
         console.error('Error creating demo chat:', error);
+        showDemoError();
         return null;
+    }
+}
+
+function showDemoReady() {
+    const welcomeMessage = document.getElementById('demoWelcomeMessage');
+    const loadingBadge = document.querySelector('#demoChatMessages .rounded-full');
+    const input = document.getElementById('demoChatInput');
+    const sendButton = document.getElementById('demoSendButton');
+    
+    if (welcomeMessage && loadingBadge) {
+        loadingBadge.style.display = 'none';
+        welcomeMessage.style.display = 'block';
+        welcomeMessage.style.animation = 'fadeIn 0.3s ease-in';
+    }
+    
+    if (input) {
+        input.disabled = false;
+        input.placeholder = 'Ask a question about Apple\'s financials... (e.g., \'What was their revenue?\')';
+    }
+    if (sendButton) {
+        sendButton.disabled = false;
+    }
+}
+
+function showDemoError() {
+    const welcomeMessage = document.getElementById('demoWelcomeMessage');
+    const loadingBadge = document.querySelector('#demoChatMessages .rounded-full');
+    const container = document.querySelector('#demoChatMessages > div');
+    const input = document.getElementById('demoChatInput');
+    const sendButton = document.getElementById('demoSendButton');
+    
+    if (container && loadingBadge) {
+        loadingBadge.style.display = 'none';
+        if (welcomeMessage) {
+            welcomeMessage.style.display = 'none';
+        }
+        container.innerHTML = `
+            <p class="text-sm text-red-600 leading-relaxed">
+                Unable to initialize demo. Please refresh the page.
+            </p>
+        `;
+    }
+    
+    if (input) {
+        input.disabled = true;
+        input.placeholder = 'Demo unavailable - please refresh';
+    }
+    if (sendButton) {
+        sendButton.disabled = true;
     }
 }
 
@@ -207,15 +282,156 @@ function initializeScrollAnimations() {
             if (entry.isIntersecting) {
                 entry.target.style.opacity = '1';
                 entry.target.style.transform = 'translateY(0)';
+                entry.target.classList.add('animated');
             }
         });
     }, observerOptions);
 
-    document.querySelectorAll('.fade-in-up').forEach(el => {
+    document.querySelectorAll('.fade-in-up').forEach((el, index) => {
         el.style.opacity = '0';
         el.style.transform = 'translateY(30px)';
         el.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
+        if (index > 0) {
+            el.style.transitionDelay = `${Math.min(index * 0.1, 0.5)}s`;
+        }
         observer.observe(el);
     });
 }
+
+function initializeStatAnimations() {
+    const statsSection = document.querySelector('.stat-item')?.closest('section');
+    if (!statsSection) return;
+
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && !statAnimationStarted) {
+                statAnimationStarted = true;
+                animateStats();
+            }
+        });
+    }, { threshold: 0.5 });
+
+    observer.observe(statsSection);
+}
+
+function animateStats() {
+    const statItems = document.querySelectorAll('.stat-item');
+    statItems.forEach((item, index) => {
+        setTimeout(() => {
+            item.style.animation = 'fadeInUp 0.6s ease-out forwards';
+            item.style.opacity = '1';
+            
+            const numberEl = item.querySelector('div:first-child');
+            if (numberEl && numberEl.textContent === '∞') {
+                numberEl.style.animation = 'pulse 2s ease-in-out infinite';
+            }
+        }, index * 150);
+    });
+}
+
+function initializeFeatureCards() {
+    const cards = document.querySelectorAll('.feature-card');
+    cards.forEach((card, index) => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-8px) scale(1.02)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+        
+        setTimeout(() => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'all 0.5s ease-out';
+            
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        setTimeout(() => {
+                            entry.target.style.opacity = '1';
+                            entry.target.style.transform = 'translateY(0)';
+                        }, index * 100);
+                    }
+                });
+            }, { threshold: 0.2 });
+            
+            observer.observe(card);
+        }, 100);
+    });
+}
+
+function addEasterEggs() {
+    let clickCount = 0;
+    const logo = document.querySelector('.logo-img');
+    
+    if (logo) {
+        logo.addEventListener('click', function() {
+            clickCount++;
+            if (clickCount === 5) {
+                this.style.animation = 'spin 1s linear';
+                setTimeout(() => {
+                    this.style.animation = '';
+                    alert('🎉 You found the secret! We\'re actually backed by coffee. Lots of coffee.');
+                }, 1000);
+                clickCount = 0;
+            }
+        });
+    }
+    
+    const badges = document.querySelectorAll('span');
+    badges.forEach(badge => {
+        if (badge.textContent && badge.textContent.includes('Backed by nobody')) {
+            badge.style.cursor = 'pointer';
+            badge.addEventListener('click', function() {
+                const messages = [
+                    'We\'re honest, not broke.',
+                    'Actually, we\'re both.',
+                    'But at least we\'re transparent!',
+                    'Unlike some companies...',
+                    'We\'re looking at you, Theranos.'
+                ];
+                const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+                const originalText = this.textContent;
+                this.textContent = randomMsg;
+                setTimeout(() => {
+                    this.textContent = originalText;
+                }, 3000);
+            });
+        }
+    });
+    
+    document.addEventListener('keydown', function(e) {
+        if (e.key === '?' && e.shiftKey) {
+            const helpText = document.createElement('div');
+            helpText.className = 'fixed bottom-4 right-4 bg-black text-white p-4 rounded-xl shadow-xl z-50 max-w-sm';
+            helpText.innerHTML = '<p class="text-sm font-semibold mb-2">💡 Pro Tips:</p><ul class="text-xs space-y-1 list-disc list-inside"><li>Click the logo 5 times</li><li>Try the demo - it\'s actually functional</li><li>We don\'t track you (seriously)</li></ul>';
+            document.body.appendChild(helpText);
+            setTimeout(() => {
+                helpText.style.opacity = '0';
+                helpText.style.transition = 'opacity 0.3s';
+                setTimeout(() => helpText.remove(), 300);
+            }, 5000);
+        }
+    });
+}
+
+const originalConsoleLog = console.log;
+console.log = function(...args) {
+    if (args[0] && typeof args[0] === 'string' && args[0].includes('Demo chat created')) {
+        const demoContainer = document.getElementById('demoChatContainer');
+        if (demoContainer) {
+            const indicator = document.createElement('div');
+            indicator.className = 'fixed top-20 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 text-sm font-medium';
+            indicator.textContent = '✓ Demo ready!';
+            document.body.appendChild(indicator);
+            setTimeout(() => {
+                indicator.style.opacity = '0';
+                indicator.style.transition = 'opacity 0.3s';
+                setTimeout(() => indicator.remove(), 300);
+            }, 2000);
+        }
+    }
+    originalConsoleLog.apply(console, args);
+};
 

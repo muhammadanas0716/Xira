@@ -23,31 +23,99 @@ async function createNewChat() {
     if (response.ok) {
       currentChatId = data.chat_id;
       console.log("Chat created:", data);
-      console.log("PDF text length:", data.pdf_text_length);
-      if (!data.has_pdf || data.pdf_text_length === 0) {
-        alert(
-          `Warning: PDF text extraction may have failed. PDF text length: ${
-            data.pdf_text_length || 0
-          } characters. You may not be able to ask questions about the PDF.`
-        );
-      }
-      loadChat(data.chat_id);
+      
       closeNewChatModal();
+      loadChat(data.chat_id);
       loadChatHistory();
+      
+      const sidebar = document.getElementById("sidebar");
+      if (sidebar && !sidebar.classList.contains("sidebar-collapsed")) {
+        toggleSidebar();
+      }
+      
       if (data.pdf_filename) {
+        showPdfStatus("PDF Loading...");
         setTimeout(() => {
           loadPdfFromUrl(`/pdfs/${data.pdf_filename}`);
         }, 500);
+      } else if (data.pdf_downloading) {
+        showPdfStatus("PDF Downloading...");
+        startPdfPolling(data.chat_id, ticker);
+      } else {
+        hidePdfStatus();
       }
     } else {
       alert(data.error || "Failed to create chat");
+      loadingDiv.classList.add("hidden");
     }
   } catch (error) {
     console.error("Error:", error);
     alert("An error occurred. Please try again.");
-  } finally {
     loadingDiv.classList.add("hidden");
   }
+}
+
+function showPdfStatus(message) {
+  let statusDiv = document.getElementById("pdfStatusIndicator");
+  if (!statusDiv) {
+    statusDiv = document.createElement("div");
+    statusDiv.id = "pdfStatusIndicator";
+    statusDiv.className = "fixed top-4 right-4 bg-red-100 text-red-700 px-4 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2";
+    document.body.appendChild(statusDiv);
+  }
+  statusDiv.innerHTML = `
+    <div class="loading-spinner w-4 h-4 border-2 border-red-600 border-t-transparent"></div>
+    <span class="text-sm font-semibold">${message}</span>
+  `;
+  statusDiv.classList.remove("hidden");
+}
+
+function hidePdfStatus() {
+  const statusDiv = document.getElementById("pdfStatusIndicator");
+  if (statusDiv) {
+    statusDiv.classList.add("hidden");
+    setTimeout(() => {
+      if (statusDiv.parentNode) {
+        statusDiv.parentNode.removeChild(statusDiv);
+      }
+    }, 300);
+  }
+}
+
+function startPdfPolling(chatId, ticker) {
+  const filename = `${ticker}_latest_10Q.pdf`;
+  let attempts = 0;
+  const maxAttempts = 60;
+  
+  const pollInterval = setInterval(async () => {
+    attempts++;
+    
+    try {
+      const response = await fetch(`/api/chats/${chatId}`);
+      if (response.ok) {
+        const chat = await response.json();
+        if (chat.pdf_filename || chat.has_pdf) {
+          clearInterval(pollInterval);
+          showPdfStatus("PDF Loading...");
+          setTimeout(() => {
+            loadPdfFromUrl(`/pdfs/${filename}`);
+          }, 500);
+        }
+      }
+    } catch (error) {
+      console.error("Error polling for PDF:", error);
+    }
+    
+    if (attempts >= maxAttempts) {
+      clearInterval(pollInterval);
+      hidePdfStatus();
+      const statusDiv = document.getElementById("pdfStatusIndicator");
+      if (statusDiv) {
+        statusDiv.className = "fixed top-4 right-4 bg-yellow-100 text-yellow-700 px-4 py-2 rounded-lg shadow-lg z-50";
+        statusDiv.innerHTML = '<span class="text-sm font-semibold">PDF download taking longer than expected</span>';
+      }
+    }
+  }, 2000);
 }
 
 async function loadChat(chatId) {
@@ -145,6 +213,47 @@ async function deleteChat(chatId, ticker) {
   } catch (error) {
     console.error("Error deleting chat:", error);
     alert("An error occurred while deleting the chat. Please try again.");
+  }
+}
+
+async function deleteAllChats() {
+  if (!confirm("Are you sure you want to delete ALL chats? This action cannot be undone.")) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/chats", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      currentChatId = null;
+      const emptyState = document.getElementById("emptyState");
+      const chatContentContainer = document.getElementById("chatContentContainer");
+      const dashboardFooter = document.getElementById("dashboardFooter");
+      
+      if (emptyState) emptyState.classList.remove("hidden");
+      if (chatContentContainer) {
+        chatContentContainer.classList.add("hidden");
+        chatContentContainer.innerHTML = "";
+      }
+      if (dashboardFooter) dashboardFooter.classList.add("hidden");
+      
+      loadChatHistory();
+      
+      const pdfViewer = document.getElementById("pdfViewer");
+      if (pdfViewer) {
+        closePdfViewer();
+      }
+    } else {
+      alert(data.error || "Failed to delete all chats");
+    }
+  } catch (error) {
+    console.error("Error deleting all chats:", error);
+    alert("An error occurred while deleting all chats. Please try again.");
   }
 }
 

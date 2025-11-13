@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Xira - AI-Powered Financial Analysis</title>
+    <meta name="description"
+        content="Stop reading 67-page SEC filings. Chat with them instead. AI-powered financial analysis that actually makes sense.">
 
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/logo.ico') }}">
     <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='images/logo.ico') }}">
@@ -32,6 +34,8 @@
                 <div class="flex items-center gap-8">
                     <a href="/betaDashboard"
                         class="hidden md:block text-gray-700 hover:text-gray-900 font-medium transition-colors">Dashboard</a>
+                    <a href="#features" onclick="event.preventDefault(); scrollToSection('features');"
+                        class="hidden md:block text-gray-700 hover:text-gray-900 font-medium transition-colors cursor-pointer">Features</a>
                     <a href="#demo" onclick="event.preventDefault(); scrollToDemo();"
                         class="hidden md:block text-gray-700 hover:text-gray-900 font-medium transition-colors cursor-pointer">Demo</a>
                 </div>
@@ -39,57 +43,164 @@
         </div>
     </nav>
 
-    <section class="pt-32 pb-20 px-6 relative overflow-hidden z-10">
-        <div class="max-w-4xl mx-auto text-center fade-in-up relative">
-            <div class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full mb-8">
+    <section class="pt-40 pb-24 px-6 relative overflow-hidden z-10">
+        <div class="max-w-5xl mx-auto text-center fade-in-up relative">
+            <div
+                class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full mb-8 hover:border-gray-300 transition-colors cursor-default">
                 <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="w-5 h-5 rounded">
-                <span class="text-sm font-medium text-gray-700">Backed by nobody</span>
+                <span class="text-sm font-medium text-gray-700">Backed by nobody (we're honest like that)</span>
             </div>
-            <h1 class="text-6xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight">
-                AI-Powered Financial Analysis
+            <h1 class="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+                Stop Reading 67-Page<br>SEC Filings
             </h1>
-            <p class="text-xl md:text-2xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
-                Analyze SEC filings, chat with financial documents, and get instant insights powered by advanced AI.
+            <p class="text-2xl md:text-3xl text-gray-600 mb-4 max-w-3xl mx-auto leading-relaxed font-medium">
+                Chat with them instead.
+            </p>
+            <p class="text-lg md:text-xl text-gray-500 mb-12 max-w-2xl mx-auto leading-relaxed">
+                AI-powered financial analysis that actually makes sense. Ask questions, get answers. No finance degree
+                required.
             </p>
             <div class="flex items-center justify-center gap-4 flex-wrap">
                 <button onclick="scrollToDemo()"
-                    class="bg-black hover:bg-gray-800 text-white font-semibold py-4 px-8 rounded-xl transition-all btn-primary shadow-lg text-lg">
-                    Look at Demo
+                    class="bg-black hover:bg-gray-800 text-white font-semibold py-4 px-10 rounded-xl transition-all btn-primary shadow-lg text-lg">
+                    Try It Free
                 </button>
-                <button
-                    class="bg-white hover:bg-white text-gray-900 font-semibold py-4 px-8 rounded-xl border-2 border-gray-300 transition-all shadow-sm text-lg">
-                    Schedule a Call
+                <button onclick="scrollToSection('features')"
+                    class="bg-white hover:bg-gray-50 text-gray-900 font-semibold py-4 px-10 rounded-xl border-2 border-gray-300 hover:border-gray-400 transition-all shadow-sm text-lg">
+                    See How It Works
                 </button>
             </div>
         </div>
     </section>
 
-    <section id="demo" class="py-20 px-6 bg-white relative z-10">
+    <section id="features" class="py-24 px-6 bg-gray-50 relative z-10">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16 fade-in-up">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Why Waste Time When You Can Waste Money?
+                </h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Just kidding. We save you both. Here's what makes us
+                    different (and actually useful):</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="feature-card bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl border border-gray-100">
+                    <div class="w-12 h-12 bg-black rounded-xl flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z">
+                            </path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Chat, Don't Read</h3>
+                    <p class="text-gray-600 leading-relaxed">Ask questions in plain English. Get answers in plain
+                        English. No need to Ctrl+F through 200 pages of legal jargon.</p>
+                </div>
+                <div class="feature-card bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl border border-gray-100">
+                    <div class="w-12 h-12 bg-black rounded-xl flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
+                            </path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Real SEC Data</h3>
+                    <p class="text-gray-600 leading-relaxed">We pull directly from the SEC. No middlemen, no outdated
+                        info. Just fresh, official financial data when you need it.</p>
+                </div>
+                <div class="feature-card bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl border border-gray-100">
+                    <div class="w-12 h-12 bg-black rounded-xl flex items-center justify-center mb-6">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Instant Insights</h3>
+                    <p class="text-gray-600 leading-relaxed">Get answers in seconds, not hours. Perfect for when you
+                        need to look smart in a meeting that started 5 minutes ago.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-24 px-6 bg-white relative z-10">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16 fade-in-up">
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">How It Works</h2>
+                <p class="text-lg text-gray-600">Three steps. That's it. We promise.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-12">
+                <div class="text-center fade-in-up">
+                    <div
+                        class="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">
+                        1</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Pick a Stock</h3>
+                    <p class="text-gray-600">Enter any ticker symbol. We'll grab the latest 10-Q filing faster than you
+                        can say "quarterly earnings report."</p>
+                </div>
+                <div class="text-center fade-in-up">
+                    <div
+                        class="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">
+                        2</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Ask Questions</h3>
+                    <p class="text-gray-600">Ask anything. "What's their revenue?" "Why did expenses increase?" "Should
+                        I be worried?" (We'll be honest about that last one.)</p>
+                </div>
+                <div class="text-center fade-in-up">
+                    <div
+                        class="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">
+                        3</div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Get Answers</h3>
+                    <p class="text-gray-600">Our AI reads through the entire filing and gives you a clear, concise
+                        answer. Straight to the point, always accurate.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="demo" class="py-24 px-6 bg-gray-50 relative z-10">
         <div class="max-w-6xl mx-auto">
             <div class="text-center mb-12 fade-in-up">
                 <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Try It Yourself</h2>
-                <p class="text-lg text-gray-600">Chat with Apple's latest 10-Q filing using our AI system</p>
+                <p class="text-lg text-gray-600 mb-2">Chat with Apple's latest 10-Q filing. No signup required. No
+                    credit card. No catch.</p>
+                <p class="text-sm text-gray-500">(Seriously, we're not collecting your email. We're too busy building
+                    features.)</p>
             </div>
 
             <div class="bg-white rounded-2xl shadow-xl overflow-hidden fade-in-up">
-                <div class="p-6 border-b border-gray-200 bg-white">
-                    <div class="flex items-center">
-                        <span class="text-sm font-medium text-gray-700">AAPL - Apple Inc. Latest 10-Q</span>
+                <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                            <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <span class="text-sm font-medium text-gray-700 ml-4">AAPL - Apple Inc. Latest 10-Q</span>
+                        </div>
+                        <span class="text-xs text-gray-500">Live Demo</span>
                     </div>
                 </div>
 
                 <div id="demoChatContainer" class="h-96 overflow-y-auto p-6 scrollbar-hide bg-white">
                     <div id="demoChatMessages" class="space-y-4">
-                        <div class="bg-white rounded-xl p-4 border border-gray-200">
-                            <p class="text-sm text-gray-600">Start chatting with Apple's financial data. Ask questions
-                                about revenue, expenses, or any financial metrics.</p>
+                        <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                            <div class="flex items-center gap-3 mb-3">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 animate-pulse">
+                                    Readying Demo...
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-700 leading-relaxed" id="demoWelcomeMessage" style="display: none;">
+                                <span class="font-semibold">👋 Hey there!</span> I'm ready to answer questions about
+                                Apple's financial data.
+                                Try asking something like "What was Apple's revenue this quarter?" or "How did their
+                                operating expenses change?"
+                            </p>
                         </div>
                     </div>
                 </div>
 
                 <div class="p-6 border-t border-gray-200 bg-white">
                     <div class="relative">
-                        <input type="text" id="demoChatInput" placeholder="Ask a question about Apple's financials..."
+                        <input type="text" id="demoChatInput"
+                            placeholder="Ask a question about Apple's financials... (e.g., 'What was their revenue?')"
                             class="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent input-focus shadow-sm">
                         <button id="demoSendButton" onclick="sendDemoMessage()"
                             class="absolute right-3 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black hover:bg-gray-800 text-white rounded-xl flex items-center justify-center transition-all btn-primary shadow-md">
@@ -104,19 +215,55 @@
         </div>
     </section>
 
-    <footer class="bg-white border-t border-gray-200 py-6 px-8 relative z-10">
-        <div class="max-w-[57.6rem] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <div class="flex items-center gap-4">
-                <p class="text-sm text-gray-600">&copy; 2025 Xira. All rights reserved.</p>
-                <span class="text-xs text-gray-500">•</span>
-                <div class="flex items-center gap-2">
-                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="w-4 h-4 rounded">
-                    <span class="text-sm text-gray-600">Backed by nobody</span>
+    <section class="py-24 px-6 bg-white relative z-10">
+        <div class="max-w-4xl mx-auto text-center">
+            <div class="bg-gray-50 rounded-2xl p-12 border border-gray-200 fade-in-up">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Ready to Stop Reading PDFs?</h2>
+                <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+                    Join the smart investors who ask questions instead of scrolling through endless pages.
+                    (Your eyes will thank you.)
+                </p>
+                <div class="flex items-center justify-center gap-4 flex-wrap">
+                    <button onclick="scrollToDemo()"
+                        class="bg-black hover:bg-gray-800 text-white font-semibold py-4 px-10 rounded-xl transition-all btn-primary shadow-lg text-lg">
+                        Try It Now
+                    </button>
+                    <a href="/betaDashboard"
+                        class="bg-white hover:bg-gray-50 text-gray-900 font-semibold py-4 px-10 rounded-xl border-2 border-gray-300 hover:border-gray-400 transition-all shadow-sm text-lg">
+                        Go to Dashboard
+                    </a>
                 </div>
             </div>
-            <div class="flex items-center gap-6">
-                <a href="{{ url_for('main.privacy') }}" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">Privacy</a>
-                <a href="{{ url_for('main.terms') }}" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">Terms</a>
+        </div>
+    </section>
+
+    <footer class="bg-white border-t border-gray-200 py-12 px-8 relative z-10">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
+                <div class="flex items-center gap-3">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo"
+                        class="w-8 h-8 rounded-lg">
+                    <span class="text-xl font-bold text-gray-900">Xira</span>
+                </div>
+                <div class="flex items-center gap-8 flex-wrap justify-center">
+                    <a href="/betaDashboard"
+                        class="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium">Dashboard</a>
+                    <a href="#features" onclick="event.preventDefault(); scrollToSection('features');"
+                        class="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium cursor-pointer">Features</a>
+                    <a href="#demo" onclick="event.preventDefault(); scrollToDemo();"
+                        class="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium cursor-pointer">Demo</a>
+                    <a href="{{ url_for('main.privacy') }}"
+                        class="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium">Privacy</a>
+                    <a href="{{ url_for('main.terms') }}"
+                        class="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium">Terms</a>
+                </div>
+            </div>
+            <div class="pt-8 border-t border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-sm text-gray-600">&copy; 2025 Xira. All rights reserved. (Mostly.)</p>
+                <div class="flex items-center gap-2">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="w-4 h-4 rounded">
+                    <span class="text-sm text-gray-500">Backed by nobody, powered by curiosity</span>
+                </div>
             </div>
         </div>
     </footer>

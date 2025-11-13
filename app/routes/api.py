@@ -1,7 +1,8 @@
 import os
 import re
 import uuid
-from flask import Blueprint, jsonify, request, session
+import threading
+from flask import Blueprint, jsonify, request, session, current_app
 from app import db
 from app.models.chat import Chat, Message
 from app.services.stock_service import stock_service
@@ -24,6 +25,49 @@ def sanitize_string(value, max_length=10000):
         return None
     return value.strip()
 
+def download_and_extract_pdf_background(chat_id, ticker, app):
+    try:
+        filename = f"{ticker}_latest_10Q.pdf"
+        filepath = os.path.join(Config.DOWNLOADS_DIR, filename)
+        
+        if os.path.exists(filepath):
+            print(f"PDF exists, extracting text from: {filename}")
+            pdf_text = pdf_service.extract_text(filename)
+        else:
+            if Config.SEC_API_KEY:
+                print(f"PDF not found, downloading for {ticker}...")
+                filing_url = sec_service.get_latest_10q_url(ticker)
+                if filing_url:
+                    result = sec_service.download_pdf(filing_url, ticker)
+                    if result:
+                        print(f"PDF downloaded, extracting text from: {result}")
+                        pdf_text = pdf_service.extract_text(result)
+                    else:
+                        print(f"Failed to download PDF for {ticker}")
+                        pdf_text = None
+                else:
+                    print(f"No filing URL found for {ticker}")
+                    pdf_text = None
+            else:
+                print("SEC_API_KEY not configured")
+                pdf_text = None
+        
+        if pdf_text:
+            print(f"PDF text extracted successfully, length: {len(pdf_text)} characters")
+            with app.app_context():
+                chat = Chat.query.get(chat_id)
+                if chat:
+                    chat.pdf_text = pdf_text
+                    db.session.commit()
+                    chat.get_pdf_message(is_continuation=False)
+                    print(f"PDF message pre-cached for LLM, ready to answer questions")
+        else:
+            print(f"WARNING: No PDF text extracted for {ticker}")
+    except Exception as e:
+        print(f"Error in background PDF download: {e}")
+        import traceback
+        traceback.print_exc()
+
 @api_bp.route('/create-chat', methods=['POST'])
 def create_chat():
     data = request.get_json()
@@ -39,36 +83,14 @@ def create_chat():
     if not stock_info:
         return jsonify({'error': 'Failed to fetch stock information'}), 400
     
-    pdf_text = None
     filename = f"{ticker}_latest_10Q.pdf"
     filepath = os.path.join(Config.DOWNLOADS_DIR, filename)
+    pdf_exists = os.path.exists(filepath)
     
-    if os.path.exists(filepath):
+    pdf_text = None
+    if pdf_exists:
         print(f"PDF exists, extracting text from: {filename}")
         pdf_text = pdf_service.extract_text(filename)
-    else:
-        if Config.SEC_API_KEY:
-            print(f"PDF not found, downloading for {ticker}...")
-            filing_url = sec_service.get_latest_10q_url(ticker)
-            if filing_url:
-                result = sec_service.download_pdf(filing_url, ticker)
-                if result:
-                    print(f"PDF downloaded, extracting text from: {result}")
-                    pdf_text = pdf_service.extract_text(result)
-                else:
-                    print(f"Failed to download PDF for {ticker}")
-            else:
-                print(f"No filing URL found for {ticker}")
-        else:
-            print("SEC_API_KEY not configured")
-    
-    if pdf_text:
-        print(f"PDF text extracted successfully, length: {len(pdf_text)} characters")
-        print(f"First 200 chars: {pdf_text[:200]}")
-    else:
-        print(f"WARNING: No PDF text extracted for {ticker}")
-    
-    pdf_exists = os.path.exists(filepath)
     
     chat = Chat(
         ticker=ticker,
@@ -82,6 +104,11 @@ def create_chat():
     if pdf_text:
         chat.get_pdf_message(is_continuation=False)
         print(f"PDF message pre-cached for LLM, ready to answer questions")
+    else:
+        print(f"Starting background PDF download for {ticker}...")
+        thread = threading.Thread(target=download_and_extract_pdf_background, args=(chat.id, ticker, current_app._get_current_object()))
+        thread.daemon = True
+        thread.start()
     
     return jsonify({
         'chat_id': chat.id,
@@ -89,7 +116,8 @@ def create_chat():
         'stock_info': stock_info,
         'has_pdf': pdf_text is not None,
         'pdf_text_length': len(pdf_text) if pdf_text else 0,
-        'pdf_filename': filename if pdf_exists else None
+        'pdf_filename': filename if pdf_exists else None,
+        'pdf_downloading': not pdf_exists and Config.SEC_API_KEY is not None
     })
 
 @api_bp.route('/chats', methods=['GET'])
@@ -268,3 +296,17 @@ def delete_chat(chat_id):
     db.session.commit()
     
     return jsonify({'success': True, 'message': 'Chat deleted successfully'})
+
+@api_bp.route('/chats', methods=['DELETE'])
+def delete_all_chats():
+    try:
+        count = Chat.query.count()
+        Chat.query.delete()
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'All {count} chats deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error deleting all chats: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Failed to delete all chats'}), 500

@@ -58,6 +58,14 @@ async function loadPdfFromUrl(url) {
         console.warn("PDF file not found:", url);
         pdfLoading.classList.add("hidden");
         pdfPlaceholder.classList.remove("hidden");
+        const statusDiv = document.getElementById("pdfStatusIndicator");
+        if (statusDiv) {
+          statusDiv.className = "fixed top-4 right-4 bg-yellow-100 text-yellow-700 px-4 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2";
+          statusDiv.innerHTML = `
+            <div class="loading-spinner w-4 h-4 border-2 border-yellow-600 border-t-transparent"></div>
+            <span class="text-sm font-semibold">PDF Downloading...</span>
+          `;
+        }
         showError(
           "PDF file not found. The file may not have been downloaded yet."
         );
@@ -92,6 +100,15 @@ async function loadPdfFromUrl(url) {
     pdfControls.classList.remove("hidden");
 
     pdfContainer.scrollTop = 0;
+    
+    const statusDiv = document.getElementById("pdfStatusIndicator");
+    if (statusDiv) {
+      statusDiv.className = "fixed top-4 right-4 bg-green-100 text-green-700 px-4 py-2 rounded-lg shadow-lg z-50";
+      statusDiv.innerHTML = '<span class="text-sm font-semibold">✓ PDF Ready</span>';
+      setTimeout(() => {
+        hidePdfStatus();
+      }, 2000);
+    }
 
     console.log("PDF viewer visible:", !pdfViewer.classList.contains("hidden"));
     console.log("PDF viewer children:", pdfViewer.children.length);

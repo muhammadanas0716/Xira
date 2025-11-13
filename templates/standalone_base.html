@@ -34,14 +34,33 @@
         {% block content %}{% endblock %}
     </div>
 
-    <footer class="bg-white border-t border-gray-200 py-6 px-8 mt-12 relative z-10">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <div class="flex items-center gap-4">
-                <p class="text-sm text-gray-600">&copy; 2025 Xira. All rights reserved.</p>
+    <footer class="bg-white border-t border-gray-200 py-12 px-8 relative z-10">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
+                <div class="flex items-center gap-3">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo"
+                        class="w-8 h-8 rounded-lg">
+                    <span class="text-xl font-bold text-gray-900">Xira</span>
+                </div>
+                <div class="flex items-center gap-8 flex-wrap justify-center">
+                    <a href="/betaDashboard"
+                        class="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium">Dashboard</a>
+                    <a href="/#features"
+                        class="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium">Features</a>
+                    <a href="/#demo"
+                        class="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium">Demo</a>
+                    <a href="{{ url_for('main.privacy') }}"
+                        class="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium">Privacy</a>
+                    <a href="{{ url_for('main.terms') }}"
+                        class="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium">Terms</a>
+                </div>
             </div>
-            <div class="flex items-center gap-6">
-                <a href="/privacy" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">Privacy</a>
-                <a href="/terms" class="text-sm text-gray-600 hover:text-gray-900 transition-colors">Terms</a>
+            <div class="pt-8 border-t border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4">
+                <p class="text-sm text-gray-600">&copy; 2025 Xira. All rights reserved. (Mostly.)</p>
+                <div class="flex items-center gap-2">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="w-4 h-4 rounded">
+                    <span class="text-sm text-gray-500">Backed by nobody, powered by curiosity</span>
+                </div>
             </div>
         </div>
     </footer>
