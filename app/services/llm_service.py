@@ -32,6 +32,9 @@ FORMATTING:
 - Use tables when they add clarity: comparisons, financial metrics across periods, ratios, structured data with multiple values
 - Use bullet points (-) for simple lists or when tables aren't needed
 - Use **bold** for key numbers and metrics
+- Use <span style="color: green">green text</span> sparingly to highlight positive trends, improvements, or strengths
+- Use <span style="color: red">red text</span> sparingly to highlight concerns, declines, or weaknesses
+- Only use colors for emphasis on 1-3 key points per response - don't overuse colors
 - Choose the format that best presents the information - tables for comparisons, headings for organization, bullets for lists
 - Keep paragraphs short and readable"""
         return LLMService._system_prompt_cache
@@ -84,6 +87,8 @@ Format:
 - Use tables when helpful: comparisons, financial metrics across periods, ratios, structured data
 - Use bullet points (-) for simple lists or when tables aren't needed
 - Use **bold** for key numbers
+- Use <span style="color: green">green text</span> sparingly (1-3 times max) to highlight positive trends or strengths
+- Use <span style="color: red">red text</span> sparingly (1-3 times max) to highlight concerns or weaknesses
 - Choose the best format for each piece of information
 - Keep it short unless detailed analysis is needed
 
@@ -150,6 +155,8 @@ Format:
 - Use tables when helpful: comparisons, financial metrics across periods, ratios, structured data
 - Use bullet points (-) for simple lists or when tables aren't needed
 - Use **bold** for key numbers
+- Use <span style="color: green">green text</span> sparingly (1-3 times max) to highlight positive trends or strengths
+- Use <span style="color: red">red text</span> sparingly (1-3 times max) to highlight concerns or weaknesses
 - Choose the best format for each piece of information
 - Keep it short unless detailed analysis is needed
 
@@ -277,6 +284,8 @@ Justify with:
 - Use headings (##) to organize sections - don't overuse them
 - Use tables when they add clarity: comparisons across periods, financial metrics, ratios, structured data with multiple values
 - Use bullet points for simple lists or when tables aren't needed
+- Use <span style="color: green">green text</span> sparingly (2-5 times max) to highlight positive trends, improvements, or strengths
+- Use <span style="color: red">red text</span> sparingly (2-5 times max) to highlight concerns, declines, or weaknesses
 - Choose the best format for each piece of information
 - Include specific numbers and dates
 - Keep language clear and simple

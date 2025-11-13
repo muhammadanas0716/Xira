@@ -11,7 +11,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -46,13 +45,25 @@
     <script src="{{ url_for('static', filename='js/utils/markdown.js') }}"></script>
     <script src="{{ url_for('static', filename='js/ui/modal.js') }}"></script>
     <script src="{{ url_for('static', filename='js/ui/sidebar.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chat/pdf-status.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chat/management.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chat/questions.js') }}"></script>
     <script src="{{ url_for('static', filename='js/chat/api.js') }}"></script>
     <script src="{{ url_for('static', filename='js/pdf/viewer.js') }}"></script>
     <script src="{{ url_for('static', filename='js/pdf/controls.js') }}"></script>
     <script src="{{ url_for('static', filename='js/ui/messages.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chat/tabs.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chat/stock-cards.js') }}"></script>
     <script src="{{ url_for('static', filename='js/chat/display.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/charts/utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/charts/price-chart.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/charts/ratios-chart.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/charts/metrics-chart.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/charts/range-chart.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/charts/health-chart.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/charts/liquidity-chart.js') }}"></script>
     <script src="{{ url_for('static', filename='js/charts/charts.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/reports/report.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reports/generation.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     
     {% block extra_scripts %}{% endblock %}
