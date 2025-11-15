@@ -17,7 +17,11 @@ def create_app():
     db.init_app(app)
     
     allowed_origins = os.getenv('ALLOWED_ORIGINS', 'http://localhost:5000,http://localhost:5001').split(',')
-    CORS(app, origins=allowed_origins, supports_credentials=True)
+    if os.getenv('VERCEL'):
+        vercel_url = os.getenv('VERCEL_URL', '')
+        if vercel_url:
+            allowed_origins.append(f'https://{vercel_url}')
+    CORS(app, origins=allowed_origins if allowed_origins else ['*'], supports_credentials=True)
     
     @app.after_request
     def set_security_headers(response):
@@ -42,16 +46,6 @@ def create_app():
     @app.errorhandler(500)
     def internal_error(error):
         return render_template('500.html'), 500
-    
-    try:
-        with app.app_context():
-            if app.config.get('SQLALCHEMY_DATABASE_URI') and app.config.get('SQLALCHEMY_DATABASE_URI') != 'sqlite:///:memory:':
-                try:
-                    db.create_all()
-                except Exception as db_error:
-                    print(f"Warning: Database initialization failed: {db_error}")
-    except Exception as e:
-        print(f"Warning: Database initialization failed: {e}")
     
     return app
 
