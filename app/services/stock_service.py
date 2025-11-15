@@ -1,6 +1,16 @@
 from typing import Optional, Dict
+import os
 import yfinance as yf
 from app.utils.config import Config
+
+if os.getenv('VERCEL'):
+    cache_dir = '/tmp/.cache/py-yfinance'
+    os.makedirs(cache_dir, exist_ok=True)
+    try:
+        import yfinance.cache as yf_cache
+        yf_cache.set_tz_cache_location(cache_dir)
+    except:
+        pass
 
 try:
     from polygon import RESTClient
@@ -39,15 +49,19 @@ class StockService:
                 print(f"Error fetching Polygon ticker details: {e}")
             
             try:
-                prev_close = self.polygon_client.get_previous_close_aggregate(ticker)
-                if prev_close and hasattr(prev_close, 'results') and prev_close.results:
-                    result = prev_close.results[0]
-                    data['currentPrice'] = getattr(result, 'c', None)
-                    data['open'] = getattr(result, 'o', None)
-                    data['high'] = getattr(result, 'h', None)
-                    data['low'] = getattr(result, 'l', None)
-                    data['volume'] = getattr(result, 'v', None)
-                    data['prevClose'] = getattr(result, 'c', None)
+                from datetime import datetime, timedelta
+                yesterday = datetime.now() - timedelta(days=1)
+                prev_close = self.polygon_client.get_aggs(
+                    ticker, 1, 'day', yesterday.date(), yesterday.date()
+                )
+                if prev_close and len(prev_close) > 0:
+                    result = prev_close[0]
+                    data['currentPrice'] = getattr(result, 'close', None)
+                    data['open'] = getattr(result, 'open', None)
+                    data['high'] = getattr(result, 'high', None)
+                    data['low'] = getattr(result, 'low', None)
+                    data['volume'] = getattr(result, 'volume', None)
+                    data['prevClose'] = getattr(result, 'close', None)
             except Exception as e:
                 print(f"Error fetching Polygon previous close: {e}")
             

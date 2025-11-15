@@ -39,6 +39,28 @@ def create_app():
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
     
+    @app.before_request
+    def ensure_database_initialized():
+        if not hasattr(app, '_db_initialized'):
+            try:
+                if app.config.get('SQLALCHEMY_DATABASE_URI') and app.config.get('SQLALCHEMY_DATABASE_URI') != 'sqlite:///:memory:':
+                    with app.app_context():
+                        try:
+                            db.create_all()
+                            app._db_initialized = True
+                        except Exception as db_error:
+                            error_msg = str(db_error)
+                            if 'already exists' in error_msg.lower() or 'duplicate' in error_msg.lower():
+                                app._db_initialized = True
+                            else:
+                                print(f"Warning: Database initialization failed: {db_error}")
+                                app._db_initialized = False
+                else:
+                    app._db_initialized = True
+            except Exception as e:
+                print(f"Warning: Database initialization check failed: {e}")
+                app._db_initialized = False
+    
     @app.errorhandler(404)
     def not_found_error(error):
         return render_template('404.html'), 404
