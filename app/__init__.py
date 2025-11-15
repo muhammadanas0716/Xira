@@ -43,8 +43,12 @@ def create_app():
     def internal_error(error):
         return render_template('500.html'), 500
     
-    with app.app_context():
-        db.create_all()
+    try:
+        with app.app_context():
+            if app.config.get('SQLALCHEMY_DATABASE_URI'):
+                db.create_all()
+    except Exception as e:
+        print(f"Warning: Database initialization failed: {e}")
     
     return app
 
