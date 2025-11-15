@@ -9,7 +9,7 @@ class SECService:
         self.query_api = QueryApi(api_key=Config.SEC_API_KEY) if Config.SEC_API_KEY else None
         self.pdf_generator_api = PdfGeneratorApi(api_key=Config.SEC_API_KEY) if Config.SEC_API_KEY else None
     
-    def get_latest_10q_url(self, ticker: str) -> Optional[str]:
+    def get_latest_10q_url(self, ticker: str) -> Optional[dict]:
         if not self.query_api:
             return None
         query = {
@@ -27,12 +27,18 @@ class SECService:
             filings = response.get('filings', [])
             if not filings:
                 return None
-            return filings[0].get('linkToFilingDetails')
+            filing = filings[0]
+            return {
+                'url': filing.get('linkToFilingDetails'),
+                'filed_at': filing.get('filedAt'),
+                'period_end_date': filing.get('periodOfReport'),
+                'accession_number': filing.get('accessionNo')
+            }
         except Exception as e:
             print(f"Error fetching 10-Q URL: {e}")
             return None
     
-    def download_pdf(self, filing_url: str, ticker: str) -> Optional[str]:
+    def download_pdf(self, filing_url: str, ticker: str, filename: Optional[str] = None) -> Optional[str]:
         if not self.pdf_generator_api:
             print("PDF Generator API not available - SEC_API_KEY not configured")
             return None
@@ -63,7 +69,8 @@ class SECService:
                     pdf_content = bytes(pdf_content)
             
             os.makedirs(Config.DOWNLOADS_DIR, exist_ok=True)
-            filename = f"{ticker}_latest_10Q.pdf"
+            if not filename:
+                filename = f"{ticker}_latest_10Q.pdf"
             filepath = os.path.join(Config.DOWNLOADS_DIR, filename)
             
             print(f"Writing PDF to: {filepath}")

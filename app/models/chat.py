@@ -1,18 +1,32 @@
 from datetime import datetime
 from typing import Dict, List, Optional
 from app import db
-from sqlalchemy import JSON, Text
+from sqlalchemy import JSON, Text, ForeignKey, Date
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 import uuid
+
+class TickerPDF(db.Model):
+    __tablename__ = 'ticker_pdfs'
+    
+    ticker = db.Column(db.String(10), primary_key=True)
+    filing_date = db.Column(Date, primary_key=True)
+    pdf_text = db.Column(Text, nullable=False)
+    pdf_filename = db.Column(db.String(255))
+    filed_at = db.Column(db.DateTime)
+    period_end_date = db.Column(Date)
+    accession_number = db.Column(db.String(50))
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class Chat(db.Model):
     __tablename__ = 'chats'
     
     id = db.Column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
     ticker = db.Column(db.String(10), nullable=False, index=True)
+    filing_date = db.Column(Date, nullable=True, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
     stock_info = db.Column(JSON, nullable=False)
-    pdf_text = db.Column(Text)
     generated_report = db.Column(Text)
     report_generated_at = db.Column(db.DateTime)
     
@@ -22,6 +36,7 @@ class Chat(db.Model):
         return {
             'id': self.id,
             'ticker': self.ticker,
+            'filing_date': self.filing_date.isoformat() if self.filing_date else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'stock_info': self.stock_info,
             'pdf_text': self.pdf_text,
@@ -29,6 +44,17 @@ class Chat(db.Model):
             'has_report': self.generated_report is not None,
             'report_generated_at': self.report_generated_at.isoformat() if self.report_generated_at else None
         }
+    
+    @property
+    def ticker_pdf(self):
+        if not self.ticker or not self.filing_date:
+            return None
+        return TickerPDF.query.filter_by(ticker=self.ticker, filing_date=self.filing_date).first()
+    
+    @property
+    def pdf_text(self) -> Optional[str]:
+        ticker_pdf = self.ticker_pdf
+        return ticker_pdf.pdf_text if ticker_pdf else None
     
     def add_message(self, question: str, answer: str):
         message = Message(
@@ -46,17 +72,18 @@ class Chat(db.Model):
         db.session.commit()
     
     def get_pdf_message(self, is_continuation: bool = False) -> Optional[str]:
-        if not self.pdf_text:
+        pdf_text = self.pdf_text
+        if not pdf_text:
             return None
         
         if is_continuation:
             return f"""SEC filing document (same as previous conversation):
 
-{self.pdf_text}"""
+{pdf_text}"""
         else:
             return f"""SEC filing document:
 
-{self.pdf_text}"""
+{pdf_text}"""
 
 
 class Message(db.Model):

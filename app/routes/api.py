@@ -2,9 +2,10 @@ import os
 import re
 import uuid
 import threading
+from datetime import datetime, date
 from flask import Blueprint, jsonify, request, session, current_app
 from app import db
-from app.models.chat import Chat, Message
+from app.models.chat import Chat, Message, TickerPDF
 from app.services.stock_service import stock_service
 from app.services.sec_service import sec_service
 from app.services.pdf_service import pdf_service
@@ -25,44 +26,116 @@ def sanitize_string(value, max_length=10000):
         return None
     return value.strip()
 
+def parse_filing_date(filed_at_str):
+    if not filed_at_str:
+        return None
+    try:
+        if isinstance(filed_at_str, str):
+            if 'T' in filed_at_str:
+                return datetime.fromisoformat(filed_at_str.replace('Z', '+00:00')).date()
+            else:
+                return datetime.strptime(filed_at_str, '%Y-%m-%d').date()
+        return None
+    except Exception as e:
+        print(f"Error parsing filing date {filed_at_str}: {e}")
+        return None
+
+def get_latest_filing_date_for_ticker(ticker):
+    latest_pdf = TickerPDF.query.filter_by(ticker=ticker).order_by(TickerPDF.filing_date.desc()).first()
+    return latest_pdf.filing_date if latest_pdf else None
+
 def download_and_extract_pdf_background(chat_id, ticker, app):
     try:
-        filename = f"{ticker}_latest_10Q.pdf"
-        filepath = os.path.join(Config.DOWNLOADS_DIR, filename)
+        if not Config.SEC_API_KEY:
+            print("SEC_API_KEY not configured")
+            return
         
-        if os.path.exists(filepath):
-            print(f"PDF exists, extracting text from: {filename}")
-            pdf_text = pdf_service.extract_text(filename)
-        else:
-            if Config.SEC_API_KEY:
-                print(f"PDF not found, downloading for {ticker}...")
-                filing_url = sec_service.get_latest_10q_url(ticker)
-                if filing_url:
-                    result = sec_service.download_pdf(filing_url, ticker)
-                    if result:
-                        print(f"PDF downloaded, extracting text from: {result}")
-                        pdf_text = pdf_service.extract_text(result)
-                    else:
-                        print(f"Failed to download PDF for {ticker}")
-                        pdf_text = None
-                else:
-                    print(f"No filing URL found for {ticker}")
-                    pdf_text = None
-            else:
-                print("SEC_API_KEY not configured")
-                pdf_text = None
+        print(f"Checking for latest 10-Q filing for {ticker}...")
+        filing_info = sec_service.get_latest_10q_url(ticker)
         
-        if pdf_text:
-            print(f"PDF text extracted successfully, length: {len(pdf_text)} characters")
-            with app.app_context():
+        if not filing_info or not filing_info.get('url'):
+            print(f"No filing URL found for {ticker}")
+            return
+        
+        filing_date = parse_filing_date(filing_info.get('filed_at'))
+        if not filing_date:
+            print(f"Could not parse filing date for {ticker}")
+            return
+        
+        print(f"Latest filing date for {ticker}: {filing_date}")
+        
+        with app.app_context():
+            existing_pdf = TickerPDF.query.filter_by(ticker=ticker, filing_date=filing_date).first()
+            
+            if existing_pdf:
+                print(f"PDF for {ticker} with filing date {filing_date} already exists")
                 chat = Chat.query.get(chat_id)
-                if chat:
-                    chat.pdf_text = pdf_text
+                if chat and not chat.filing_date:
+                    chat.filing_date = filing_date
                     db.session.commit()
-                    chat.get_pdf_message(is_continuation=False)
-                    print(f"PDF message pre-cached for LLM, ready to answer questions")
-        else:
-            print(f"WARNING: No PDF text extracted for {ticker}")
+                return
+            
+            latest_existing_date = get_latest_filing_date_for_ticker(ticker)
+            if latest_existing_date and filing_date <= latest_existing_date:
+                print(f"Filing date {filing_date} is not newer than existing {latest_existing_date}")
+                chat = Chat.query.get(chat_id)
+                if chat and not chat.filing_date:
+                    chat.filing_date = latest_existing_date
+                    db.session.commit()
+                return
+        
+        filing_url = filing_info['url']
+        print(f"Downloading PDF for {ticker} from {filing_url}...")
+        
+        filename = f"{ticker}_{filing_date}_10Q.pdf"
+        
+        result = sec_service.download_pdf(filing_url, ticker, filename)
+        if not result:
+            print(f"Failed to download PDF for {ticker}")
+            return
+        
+        pdf_text = pdf_service.extract_text(result)
+        if not pdf_text:
+            print(f"Failed to extract text from PDF for {ticker}")
+            return
+        
+        print(f"PDF text extracted successfully, length: {len(pdf_text)} characters")
+        
+        with app.app_context():
+            period_end_date = None
+            if filing_info.get('period_end_date'):
+                period_end_date = parse_filing_date(filing_info['period_end_date'])
+            
+            filed_at_dt = None
+            if filing_info.get('filed_at'):
+                try:
+                    filed_at_str = filing_info['filed_at']
+                    if 'T' in filed_at_str:
+                        filed_at_dt = datetime.fromisoformat(filed_at_str.replace('Z', '+00:00'))
+                    else:
+                        filed_at_dt = datetime.strptime(filed_at_str, '%Y-%m-%d')
+                except Exception as e:
+                    print(f"Error parsing filed_at datetime: {e}")
+            
+            ticker_pdf = TickerPDF(
+                ticker=ticker,
+                filing_date=filing_date,
+                pdf_text=pdf_text,
+                pdf_filename=result,
+                filed_at=filed_at_dt,
+                period_end_date=period_end_date,
+                accession_number=filing_info.get('accession_number')
+            )
+            db.session.add(ticker_pdf)
+            
+            chat = Chat.query.get(chat_id)
+            if chat:
+                chat.filing_date = filing_date
+                db.session.commit()
+                chat.get_pdf_message(is_continuation=False)
+                print(f"PDF message pre-cached for LLM, ready to answer questions")
+            else:
+                db.session.commit()
     except Exception as e:
         print(f"Error in background PDF download: {e}")
         import traceback
@@ -83,19 +156,32 @@ def create_chat():
     if not stock_info:
         return jsonify({'error': 'Failed to fetch stock information'}), 400
     
-    filename = f"{ticker}_latest_10Q.pdf"
-    filepath = os.path.join(Config.DOWNLOADS_DIR, filename)
-    pdf_exists = os.path.exists(filepath)
-    
+    filing_date = None
+    ticker_pdf = None
     pdf_text = None
-    if pdf_exists:
-        print(f"PDF exists, extracting text from: {filename}")
-        pdf_text = pdf_service.extract_text(filename)
+    
+    if Config.SEC_API_KEY:
+        filing_info = sec_service.get_latest_10q_url(ticker)
+        if filing_info and filing_info.get('url'):
+            filing_date = parse_filing_date(filing_info.get('filed_at'))
+            if filing_date:
+                ticker_pdf = TickerPDF.query.filter_by(ticker=ticker, filing_date=filing_date).first()
+                if ticker_pdf:
+                    pdf_text = ticker_pdf.pdf_text
+                    print(f"Using existing PDF text for {ticker} (filing date: {filing_date})")
+    
+    if not ticker_pdf:
+        latest_pdf = TickerPDF.query.filter_by(ticker=ticker).order_by(TickerPDF.filing_date.desc()).first()
+        if latest_pdf:
+            ticker_pdf = latest_pdf
+            filing_date = latest_pdf.filing_date
+            pdf_text = latest_pdf.pdf_text
+            print(f"Using latest existing PDF for {ticker} (filing date: {filing_date})")
     
     chat = Chat(
         ticker=ticker,
-        stock_info=stock_info,
-        pdf_text=pdf_text
+        filing_date=filing_date,
+        stock_info=stock_info
     )
     
     db.session.add(chat)
@@ -110,14 +196,17 @@ def create_chat():
         thread.daemon = True
         thread.start()
     
+    pdf_filename = ticker_pdf.pdf_filename if ticker_pdf else None
+    
     return jsonify({
         'chat_id': chat.id,
         'ticker': ticker,
+        'filing_date': filing_date.isoformat() if filing_date else None,
         'stock_info': stock_info,
         'has_pdf': pdf_text is not None,
         'pdf_text_length': len(pdf_text) if pdf_text else 0,
-        'pdf_filename': filename if pdf_exists else None,
-        'pdf_downloading': not pdf_exists and Config.SEC_API_KEY is not None
+        'pdf_filename': pdf_filename,
+        'pdf_downloading': not pdf_text and Config.SEC_API_KEY is not None
     })
 
 @api_bp.route('/chats', methods=['GET'])
@@ -150,10 +239,14 @@ def get_chat(chat_id):
         response_data['pdf_text_preview'] = response_data['pdf_text'][:500]
         del response_data['pdf_text']
     
-    filename = f"{chat.ticker}_latest_10Q.pdf"
-    filepath = os.path.join(Config.DOWNLOADS_DIR, filename)
-    if os.path.exists(filepath):
-        response_data['pdf_filename'] = filename
+    ticker_pdf = chat.ticker_pdf
+    if ticker_pdf and ticker_pdf.pdf_filename:
+        response_data['pdf_filename'] = ticker_pdf.pdf_filename
+    elif chat.filing_date:
+        filename = f"{chat.ticker}_{chat.filing_date}_10Q.pdf"
+        filepath = os.path.join(Config.DOWNLOADS_DIR, filename)
+        if os.path.exists(filepath):
+            response_data['pdf_filename'] = filename
     
     return jsonify(response_data)
 
