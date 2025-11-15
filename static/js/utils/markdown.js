@@ -6,87 +6,87 @@ marked.setOptions({
 });
 
 function preprocessLaTeX(text) {
-  if (!text) return text;
+  if (!text) return { processed: text, placeholders: [] };
   
+  let blockIndex = 0;
   let processed = text;
-  
-  const isMathLike = (str) => {
-    const trimmed = str.trim();
-    if (!trimmed) return false;
-    
-    if (trimmed.includes('\\')) return true;
-    if (trimmed.includes('=') && (trimmed.includes('\\') || /[a-zA-Z]/.test(trimmed))) return true;
-    if (/[∫∑∏√∞±×÷≤≥≠≈]/.test(trimmed)) return true;
-    if (/[a-zA-Z]\s*[=+\-*/^]|[=+\-*/^]\s*[a-zA-Z]/.test(trimmed)) return true;
-    if (/\d+\s*[+\-*/^]|[+\-*/^]\s*\d+/.test(trimmed)) return true;
-    
-    return false;
-  };
+  const placeholders = [];
   
   const isURL = (str) => {
     const trimmed = str.trim();
     return trimmed.startsWith('http') || trimmed.includes('://') || trimmed.startsWith('mailto:') || trimmed.startsWith('www.');
   };
   
-  const findMatchingParen = (text, startPos) => {
+  const findMatchingDelimiter = (text, startPos, openDelim, closeDelim) => {
     let depth = 1;
-    for (let i = startPos + 1; i < text.length; i++) {
-      if (text[i] === '(') depth++;
-      if (text[i] === ')') {
+    let i = startPos + openDelim.length;
+    while (i < text.length) {
+      if (text.substring(i, i + openDelim.length) === openDelim) {
+        depth++;
+        i += openDelim.length;
+      } else if (text.substring(i, i + closeDelim.length) === closeDelim) {
         depth--;
-        if (depth === 0) return i;
+        if (depth === 0) {
+          return i + closeDelim.length;
+        }
+        i += closeDelim.length;
+      } else {
+        i++;
       }
     }
     return -1;
   };
   
-  const findMatchingBracket = (text, startPos) => {
-    let depth = 1;
-    for (let i = startPos + 1; i < text.length; i++) {
-      if (text[i] === '[') depth++;
-      if (text[i] === ']') {
-        depth--;
-        if (depth === 0) return i;
-      }
-    }
-    return -1;
-  };
+  const patterns = [
+    { open: '\\[', close: '\\]' },
+    { open: '\\(', close: '\\)' },
+    { open: '$$', close: '$$' },
+    { open: '$', close: '$' }
+  ];
   
-  let i = 0;
-  while (i < processed.length) {
-    if (processed[i] === '(' && (i === 0 || processed[i-1] !== '\\')) {
-      const endPos = findMatchingParen(processed, i);
-      if (endPos > i) {
-        const content = processed.substring(i + 1, endPos);
-        if (isMathLike(content) && !isURL(content)) {
-          processed = processed.substring(0, i) + `\\(${content.trim()}\\)` + processed.substring(endPos + 1);
-          i += content.trim().length + 4;
-          continue;
-        }
+  for (const pattern of patterns) {
+    let i = 0;
+    while (i < processed.length) {
+      const openIndex = processed.indexOf(pattern.open, i);
+      if (openIndex === -1) break;
+      
+      if (openIndex > 0 && processed[openIndex - 1] === '\\') {
+        i = openIndex + 1;
+        continue;
+      }
+      
+      const closeIndex = findMatchingDelimiter(processed, openIndex, pattern.open, pattern.close);
+      if (closeIndex === -1) break;
+      
+      const content = processed.substring(openIndex + pattern.open.length, closeIndex - pattern.close.length);
+      if (!isURL(content)) {
+        const placeholder = `__LATEX_BLOCK_${blockIndex}__`;
+        placeholders.push({
+          placeholder,
+          content: processed.substring(openIndex, closeIndex)
+        });
+        processed = processed.substring(0, openIndex) + placeholder + processed.substring(closeIndex);
+        blockIndex++;
+        i = openIndex + placeholder.length;
+      } else {
+        i = closeIndex;
       }
     }
-    if (processed[i] === '[' && (i === 0 || processed[i-1] !== '\\')) {
-      const endPos = findMatchingBracket(processed, i);
-      if (endPos > i) {
-        const content = processed.substring(i + 1, endPos);
-        if (isMathLike(content) && !isURL(content)) {
-          processed = processed.substring(0, i) + `\\[${content.trim()}\\]` + processed.substring(endPos + 1);
-          i += content.trim().length + 4;
-          continue;
-        }
-      }
-    }
-    i++;
   }
   
-  return processed;
+  return { processed, placeholders };
 }
 
 function renderMarkdown(text) {
   if (!text) return "";
   try {
-    const processedText = preprocessLaTeX(text);
-    const html = marked.parse(processedText);
+    const { processed, placeholders } = preprocessLaTeX(text);
+    let html = marked.parse(processed);
+    
+    placeholders.forEach(({ placeholder, content }) => {
+      html = html.replace(placeholder, content);
+    });
+    
     return html;
   } catch (e) {
     return text.replace(/\n/g, "<br>");
@@ -99,78 +99,6 @@ function renderMath(element) {
   const attemptRender = () => {
     if (typeof renderMathInElement !== 'undefined') {
       try {
-        let html = element.innerHTML;
-        
-        const isMathLike = (str) => {
-          const trimmed = str.trim();
-          if (!trimmed) return false;
-          
-          if (trimmed.includes('\\')) return true;
-          if (/[a-zA-Z]\s*[=+\-*/^]|[=+\-*/^]\s*[a-zA-Z]/.test(trimmed)) return true;
-          if (/\d+\s*[+\-*/^]|[+\-*/^]\s*\d+/.test(trimmed)) return true;
-          if (trimmed.includes('=') && (trimmed.includes('\\') || /[a-zA-Z]/.test(trimmed))) return true;
-          if (/[∫∑∏√∞±×÷≤≥≠≈]/.test(trimmed)) return true;
-          
-          return false;
-        };
-        
-        const isURL = (str) => {
-          return str.startsWith('http') || str.includes('://') || str.startsWith('mailto:') || str.startsWith('www.');
-        };
-        
-        const findMatchingParen = (text, startPos) => {
-          let depth = 1;
-          for (let i = startPos + 1; i < text.length; i++) {
-            if (text[i] === '(') depth++;
-            if (text[i] === ')') {
-              depth--;
-              if (depth === 0) return i;
-            }
-          }
-          return -1;
-        };
-        
-        const findMatchingBracket = (text, startPos) => {
-          let depth = 1;
-          for (let i = startPos + 1; i < text.length; i++) {
-            if (text[i] === '[') depth++;
-            if (text[i] === ']') {
-              depth--;
-              if (depth === 0) return i;
-            }
-          }
-          return -1;
-        };
-        
-        let j = 0;
-        while (j < html.length) {
-          if (html[j] === '(' && (j === 0 || html[j-1] !== '\\')) {
-            const endPos = findMatchingParen(html, j);
-            if (endPos > j) {
-              const content = html.substring(j + 1, endPos);
-              if (isMathLike(content) && !isURL(content)) {
-                html = html.substring(0, j) + `\\(${content.trim()}\\)` + html.substring(endPos + 1);
-                j += content.trim().length + 4;
-                continue;
-              }
-            }
-          }
-          if (html[j] === '[' && (j === 0 || html[j-1] !== '\\')) {
-            const endPos = findMatchingBracket(html, j);
-            if (endPos > j) {
-              const content = html.substring(j + 1, endPos);
-              if (isMathLike(content) && !isURL(content)) {
-                html = html.substring(0, j) + `\\[${content.trim()}\\]` + html.substring(endPos + 1);
-                j += content.trim().length + 4;
-                continue;
-              }
-            }
-          }
-          j++;
-        }
-        
-        element.innerHTML = html;
-        
         renderMathInElement(element, {
           delimiters: [
             {left: '$$', right: '$$', display: true},
@@ -183,6 +111,7 @@ function renderMath(element) {
           strict: false
         });
       } catch (e) {
+        console.error('Error rendering math:', e);
       }
     } else {
       setTimeout(attemptRender, 100);
