@@ -45,8 +45,11 @@ def create_app():
     
     try:
         with app.app_context():
-            if app.config.get('SQLALCHEMY_DATABASE_URI'):
-                db.create_all()
+            if app.config.get('SQLALCHEMY_DATABASE_URI') and app.config.get('SQLALCHEMY_DATABASE_URI') != 'sqlite:///:memory:':
+                try:
+                    db.create_all()
+                except Exception as db_error:
+                    print(f"Warning: Database initialization failed: {db_error}")
     except Exception as e:
         print(f"Warning: Database initialization failed: {e}")
     

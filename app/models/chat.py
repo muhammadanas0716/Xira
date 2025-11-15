@@ -1,8 +1,7 @@
 from datetime import datetime
 from typing import Dict, List, Optional
 from app import db
-from sqlalchemy import JSON, Text, ForeignKey, Date
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import JSON, Text, ForeignKey, Date, String
 from sqlalchemy.orm import relationship
 import uuid
 
@@ -22,7 +21,7 @@ class TickerPDF(db.Model):
 class Chat(db.Model):
     __tablename__ = 'chats'
     
-    id = db.Column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = db.Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     ticker = db.Column(db.String(10), nullable=False, index=True)
     filing_date = db.Column(Date, nullable=True, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
@@ -89,8 +88,8 @@ class Chat(db.Model):
 class Message(db.Model):
     __tablename__ = 'messages'
     
-    id = db.Column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
-    chat_id = db.Column(UUID(as_uuid=False), db.ForeignKey('chats.id', ondelete='CASCADE'), nullable=False, index=True)
+    id = db.Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    chat_id = db.Column(String(36), db.ForeignKey('chats.id', ondelete='CASCADE'), nullable=False, index=True)
     question = db.Column(Text, nullable=False)
     answer = db.Column(Text, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
