@@ -35,9 +35,13 @@ def create_app():
     
     from app.routes.main import main_bp
     from app.routes.api import api_bp
+    from app.routes.db_init import db_init_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(db_init_bp)
+    
+    from app.models.chat import Chat, Message, TickerPDF
     
     @app.before_request
     def ensure_database_initialized():
@@ -46,19 +50,34 @@ def create_app():
                 if app.config.get('SQLALCHEMY_DATABASE_URI') and app.config.get('SQLALCHEMY_DATABASE_URI') != 'sqlite:///:memory:':
                     with app.app_context():
                         try:
+                            from sqlalchemy import inspect
+                            inspector = inspect(db.engine)
+                            existing_tables = inspector.get_table_names()
+                            
+                            if 'ticker_pdfs' in existing_tables:
+                                columns = [col['name'] for col in inspector.get_columns('ticker_pdfs')]
+                                if 'filing_date' not in columns:
+                                    print("Warning: ticker_pdfs table exists but missing filing_date column. You may need to recreate the table.")
+                            
                             db.create_all()
                             app._db_initialized = True
+                            print("Database tables initialized successfully")
                         except Exception as db_error:
                             error_msg = str(db_error)
-                            if 'already exists' in error_msg.lower() or 'duplicate' in error_msg.lower():
+                            if 'already exists' in error_msg.lower() or 'duplicate' in error_msg.lower() or 'relation' in error_msg.lower():
                                 app._db_initialized = True
+                                print("Database tables already exist")
                             else:
-                                print(f"Warning: Database initialization failed: {db_error}")
+                                print(f"Error: Database initialization failed: {db_error}")
+                                import traceback
+                                traceback.print_exc()
                                 app._db_initialized = False
                 else:
                     app._db_initialized = True
             except Exception as e:
-                print(f"Warning: Database initialization check failed: {e}")
+                print(f"Error: Database initialization check failed: {e}")
+                import traceback
+                traceback.print_exc()
                 app._db_initialized = False
     
     @app.errorhandler(404)

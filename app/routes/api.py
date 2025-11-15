@@ -165,18 +165,38 @@ def create_chat():
         if filing_info and filing_info.get('url'):
             filing_date = parse_filing_date(filing_info.get('filed_at'))
             if filing_date:
-                ticker_pdf = TickerPDF.query.filter_by(ticker=ticker, filing_date=filing_date).first()
-                if ticker_pdf:
-                    pdf_text = ticker_pdf.pdf_text
-                    print(f"Using existing PDF text for {ticker} (filing date: {filing_date})")
+                try:
+                    ticker_pdf = TickerPDF.query.filter_by(ticker=ticker, filing_date=filing_date).first()
+                    if ticker_pdf:
+                        pdf_text = ticker_pdf.pdf_text
+                        print(f"Using existing PDF text for {ticker} (filing date: {filing_date})")
+                except Exception as db_error:
+                    error_msg = str(db_error)
+                    if 'does not exist' in error_msg.lower() or 'undefinedcolumn' in error_msg.lower():
+                        print(f"Database schema mismatch detected. Please call POST /api/db/init to fix the database schema.")
+                        return jsonify({
+                            'error': 'Database schema mismatch. Please initialize the database by calling POST /api/db/init',
+                            'details': 'The database tables exist but have an incorrect schema. This usually happens after code changes.'
+                        }), 500
+                    raise
     
     if not ticker_pdf:
-        latest_pdf = TickerPDF.query.filter_by(ticker=ticker).order_by(TickerPDF.filing_date.desc()).first()
-        if latest_pdf:
-            ticker_pdf = latest_pdf
-            filing_date = latest_pdf.filing_date
-            pdf_text = latest_pdf.pdf_text
-            print(f"Using latest existing PDF for {ticker} (filing date: {filing_date})")
+        try:
+            latest_pdf = TickerPDF.query.filter_by(ticker=ticker).order_by(TickerPDF.filing_date.desc()).first()
+            if latest_pdf:
+                ticker_pdf = latest_pdf
+                filing_date = latest_pdf.filing_date
+                pdf_text = latest_pdf.pdf_text
+                print(f"Using latest existing PDF for {ticker} (filing date: {filing_date})")
+        except Exception as db_error:
+            error_msg = str(db_error)
+            if 'does not exist' in error_msg.lower() or 'undefinedcolumn' in error_msg.lower():
+                print(f"Database schema mismatch detected. Please call POST /api/db/init to fix the database schema.")
+                return jsonify({
+                    'error': 'Database schema mismatch. Please initialize the database by calling POST /api/db/init',
+                    'details': 'The database tables exist but have an incorrect schema. This usually happens after code changes.'
+                }), 500
+            raise
     
     chat = Chat(
         ticker=ticker,
