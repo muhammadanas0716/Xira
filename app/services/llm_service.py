@@ -36,8 +36,7 @@ FORMATTING:
 - Use <span style="color: red">red text</span> sparingly to highlight concerns, declines, or weaknesses
 - Only use colors for emphasis on 1-3 key points per response - don't overuse colors
 - Choose the format that best presents the information - tables for comparisons, headings for organization, bullets for lists
-- Keep paragraphs short and readable
-- For mathematical equations and formulas, use LaTeX notation with proper delimiters: use \\[ and \\] for display math (block equations) and \\( and \\) for inline math. Ensure LaTeX syntax is correct and properly formatted."""
+- Keep paragraphs short and readable"""
         return LLMService._system_prompt_cache
     
     def ingest_pdf(self, pdf_text: str) -> Optional[dict]:
@@ -92,7 +91,6 @@ Format:
 - Use <span style="color: red">red text</span> sparingly (1-3 times max) to highlight concerns or weaknesses
 - Choose the best format for each piece of information
 - Keep it short unless detailed analysis is needed
-- For mathematical equations and formulas, use LaTeX notation with proper delimiters: use \\[ and \\] for display math (block equations) and \\( and \\) for inline math. Ensure LaTeX syntax is correct and properly formatted.
 
 If the answer isn't in the document, say so directly."""})
             
@@ -161,7 +159,6 @@ Format:
 - Use <span style="color: red">red text</span> sparingly (1-3 times max) to highlight concerns or weaknesses
 - Choose the best format for each piece of information
 - Keep it short unless detailed analysis is needed
-- For mathematical equations and formulas, use LaTeX notation with proper delimiters: use \\[ and \\] for display math (block equations) and \\( and \\) for inline math. Ensure LaTeX syntax is correct and properly formatted.
 
 If the answer isn't in the document, say so directly."""})
             
@@ -294,7 +291,6 @@ Justify with:
 - Keep language clear and simple
 - Explain technical terms when first used
 - If data is missing, state it clearly
-- For mathematical equations and formulas, use LaTeX notation with proper delimiters: use \\[ and \\] for display math (block equations) and \\( and \\) for inline math. Ensure LaTeX syntax is correct and properly formatted
 
 **DOCUMENT:**
 {pdf_text}
