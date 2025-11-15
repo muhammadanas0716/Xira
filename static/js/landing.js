@@ -170,7 +170,7 @@ async function sendDemoMessage() {
     
     messagesDiv.innerHTML += `
         <div class="bg-white rounded-xl p-4 border border-gray-200">
-            <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${question}</div>
+            <div class="text-sm font-semibold text-gray-900 mb-2 question-highlight">Q: ${question}</div>
             <div class="text-gray-700 leading-relaxed markdown-content">
                 <span class="loading-dots">Thinking</span>
             </div>
@@ -191,7 +191,7 @@ async function sendDemoMessage() {
 
         if (response.ok && data.answer) {
             lastMsg.innerHTML = `
-                <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${data.question}</div>
+                <div class="text-sm font-semibold text-gray-900 mb-2 question-highlight">Q: ${data.question}</div>
                 <div class="text-gray-700 leading-relaxed markdown-content">${renderMarkdown(data.answer)}</div>
             `;
             const markdownContent = lastMsg.querySelector('.markdown-content');
@@ -200,7 +200,7 @@ async function sendDemoMessage() {
             }
         } else {
             lastMsg.innerHTML = `
-                <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${question}</div>
+                <div class="text-sm font-semibold text-gray-900 mb-2 question-highlight">Q: ${question}</div>
                 <div class="text-red-600">Error: ${data.error || 'Unable to get answer'}</div>
             `;
         }
@@ -210,7 +210,7 @@ async function sendDemoMessage() {
         const lastMsg = messagesDiv.lastElementChild;
         if (lastMsg) {
             lastMsg.innerHTML = `
-                <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${question}</div>
+                <div class="text-sm font-semibold text-gray-900 mb-2 question-highlight">Q: ${question}</div>
                 <div class="text-red-600">Network error. Please try again.</div>
             `;
         }

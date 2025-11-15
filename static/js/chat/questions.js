@@ -42,7 +42,7 @@ function stopQuestion() {
     const questionText = lastMsg.querySelector(".text-sm.font-semibold")?.textContent.replace("Q: ", "") || "Question";
     const safeQuestion = escapeHtml(questionText);
     lastMsg.innerHTML = `
-      <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${safeQuestion}</div>
+      <div class="text-sm font-semibold text-gray-900 mb-2 question-highlight">Q: ${safeQuestion}</div>
       <div class="text-gray-500 italic">Request cancelled by user.</div>
     `;
   }
@@ -77,7 +77,7 @@ async function askQuestion() {
   const safeQuestion = escapeHtml(question);
   messagesDiv.innerHTML += `
         <div class="bg-white rounded-xl p-6 border border-gray-200">
-            <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${safeQuestion}</div>
+            <div class="text-sm font-semibold text-gray-900 mb-2 question-highlight">Q: ${safeQuestion}</div>
             <div class="text-gray-700 leading-relaxed markdown-content">Thinking...</div>
         </div>
     `;
@@ -101,7 +101,7 @@ async function askQuestion() {
       if (data.answer) {
         const safeQuestion = escapeHtml(data.question || question);
         lastMsg.innerHTML = `
-                    <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${safeQuestion}</div>
+                    <div class="text-sm font-semibold text-gray-900 mb-2 question-highlight">Q: ${safeQuestion}</div>
                     <div class="text-gray-700 leading-relaxed markdown-content">${renderMarkdown(
                       data.answer
                     )}</div>
@@ -113,7 +113,7 @@ async function askQuestion() {
       } else {
         const safeQuestion = escapeHtml(data.question || question);
         lastMsg.innerHTML = `
-                    <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${safeQuestion}</div>
+                    <div class="text-sm font-semibold text-gray-900 mb-2 question-highlight">Q: ${safeQuestion}</div>
                     <div class="text-yellow-600">No answer received from LLM. Check server logs.</div>
                 `;
       }
@@ -121,7 +121,7 @@ async function askQuestion() {
       const safeQuestion = escapeHtml(question);
       const safeError = escapeHtml(data.error || "Unknown error");
       lastMsg.innerHTML = `
-                <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${safeQuestion}</div>
+                <div class="text-sm font-semibold text-gray-900 mb-2 question-highlight">Q: ${safeQuestion}</div>
                 <div class="text-red-600">Error: ${safeError}</div>
                 <div class="text-xs text-gray-500 mt-2">Check browser console and server logs for details.</div>
             `;
@@ -136,7 +136,7 @@ async function askQuestion() {
       const safeQuestion = escapeHtml(question);
       const safeError = escapeHtml(error.message || "Network error");
       lastMsg.innerHTML = `
-            <div class="text-sm font-semibold text-gray-900 mb-2">Q: ${safeQuestion}</div>
+            <div class="text-sm font-semibold text-gray-900 mb-2 question-highlight">Q: ${safeQuestion}</div>
             <div class="text-red-600">Network error: ${safeError}</div>
             <div class="text-xs text-gray-500 mt-2">Check browser console for details.</div>
         `;

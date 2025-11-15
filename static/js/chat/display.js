@@ -171,7 +171,7 @@ function displayChat(chat) {
                 <div class="mb-3">
                     ${
                       !isReport
-                        ? `<div class="text-sm font-semibold text-gray-900 mb-2">Q: ${safeQuestion}</div>`
+                        ? `<div class="text-sm font-semibold text-gray-900 mb-2 question-highlight">Q: ${safeQuestion}</div>`
                         : ""
                     }
                     <div class="text-gray-700 leading-relaxed markdown-content ${
