@@ -6,7 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Xira - AI-Powered Financial Analysis</title>
     <meta name="description"
-        content="Stop reading 67-page SEC filings. Chat with them instead. AI-powered financial analysis that actually makes sense.">
+        content="Stop reading 67-page SEC filings. Chat with them instead. AI-powered financial analysis that actually makes sense. Ask questions, get answers. No finance degree required.">
+    <meta name="keywords" content="SEC filings, financial analysis, AI finance, stock analysis, 10-Q, 10-K, financial data, AI chatbot, investment analysis, financial reports">
+    <meta name="author" content="Xira">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ request.url_root.rstrip('/') }}{{ url_for('main.index') }}">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Xira - AI-Powered Financial Analysis">
+    <meta property="og:description" content="Stop reading 67-page SEC filings. Chat with them instead. AI-powered financial analysis that actually makes sense.">
+    <meta property="og:image" content="{{ request.url_root.rstrip('/') }}{{ url_for('static', filename='images/thumbnail.png') }}">
+    <meta property="og:url" content="{{ request.url_root.rstrip('/') }}{{ url_for('main.index') }}">
+    <meta property="og:site_name" content="Xira">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/png">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Xira - AI-Powered Financial Analysis">
+    <meta name="twitter:description" content="Stop reading 67-page SEC filings. Chat with them instead. AI-powered financial analysis that actually makes sense.">
+    <meta name="twitter:image" content="{{ request.url_root.rstrip('/') }}{{ url_for('static', filename='images/thumbnail.png') }}">
 
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/logo.ico') }}">
     <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static', filename='images/logo.ico') }}">
@@ -19,6 +38,30 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+    
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Xira",
+        "description": "AI-powered financial analysis that makes SEC filings easy to understand. Chat with financial documents instead of reading them.",
+        "url": "{{ request.url_root.rstrip('/') }}{{ url_for('main.index') }}",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Web",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "featureList": [
+            "AI-powered financial analysis",
+            "SEC filing analysis",
+            "Stock analysis",
+            "Financial data extraction",
+            "Natural language queries"
+        ]
+    }
+    </script>
 </head>
 
 <body class="bg-white relative">
