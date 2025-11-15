@@ -46,7 +46,6 @@ function startPdfPolling(chatId, ticker) {
         }
       }
     } catch (error) {
-      console.error("Error polling for PDF:", error);
     }
     
     if (attempts >= maxAttempts) {

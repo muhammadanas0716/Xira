@@ -87,7 +87,6 @@ async function askQuestion() {
   currentAbortController = new AbortController();
 
   try {
-    console.log("Asking question:", question);
     const response = await fetch(`/api/chats/${currentChatId}/ask`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -96,7 +95,6 @@ async function askQuestion() {
     });
 
     const data = await response.json();
-    console.log("Response:", data);
 
     const lastMsg = messagesDiv.lastElementChild;
     if (response.ok) {
@@ -131,10 +129,8 @@ async function askQuestion() {
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   } catch (error) {
     if (error.name === "AbortError") {
-      console.log("Request was cancelled");
       return;
     }
-    console.error("Error asking question:", error);
     const lastMsg = messagesDiv.lastElementChild;
     if (lastMsg) {
       const safeQuestion = escapeHtml(question);

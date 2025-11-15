@@ -57,7 +57,6 @@ async function generateReport() {
     }
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   } catch (error) {
-    console.error("Error generating report:", error);
     const lastMsg = messagesDiv.lastElementChild;
     lastMsg.innerHTML = `
             <div class="text-red-600">Network error: ${error.message}</div>

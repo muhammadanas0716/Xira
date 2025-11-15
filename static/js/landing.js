@@ -69,16 +69,13 @@ async function createDemoChat() {
         const data = await response.json();
         if (response.ok) {
             demoChatId = data.chat_id;
-            console.log('Demo chat created:', demoChatId);
             showDemoReady();
             return demoChatId;
         } else {
-            console.error('Failed to create demo chat:', data.error);
             showDemoError();
             return null;
         }
     } catch (error) {
-        console.error('Error creating demo chat:', error);
         showDemoError();
         return null;
     }
@@ -210,7 +207,6 @@ async function sendDemoMessage() {
         
         container.scrollTop = container.scrollHeight;
     } catch (error) {
-        console.error('Error asking question:', error);
         const lastMsg = messagesDiv.lastElementChild;
         if (lastMsg) {
             lastMsg.innerHTML = `
@@ -361,6 +357,34 @@ function initializeFeatureCards() {
     });
 }
 
+function switchFeatureTab(tabName) {
+    const tabs = document.querySelectorAll('.feature-tab');
+    const panels = document.querySelectorAll('.feature-panel');
+    
+    tabs.forEach(tab => {
+        tab.classList.remove('active', 'text-gray-900', 'border-black');
+        tab.classList.add('text-gray-600', 'border-transparent');
+    });
+    
+    panels.forEach(panel => {
+        panel.classList.add('hidden');
+        panel.classList.remove('active');
+    });
+    
+    const activeTab = document.querySelector(`[data-tab="${tabName}"]`);
+    const activePanel = document.getElementById(tabName + 'Content');
+    
+    if (activeTab) {
+        activeTab.classList.add('active', 'text-gray-900', 'border-black');
+        activeTab.classList.remove('text-gray-600', 'border-transparent');
+    }
+    
+    if (activePanel) {
+        activePanel.classList.remove('hidden');
+        activePanel.classList.add('active');
+    }
+}
+
 function addEasterEggs() {
     let clickCount = 0;
     const logo = document.querySelector('.logo-img');
@@ -415,23 +439,4 @@ function addEasterEggs() {
         }
     });
 }
-
-const originalConsoleLog = console.log;
-console.log = function(...args) {
-    if (args[0] && typeof args[0] === 'string' && args[0].includes('Demo chat created')) {
-        const demoContainer = document.getElementById('demoChatContainer');
-        if (demoContainer) {
-            const indicator = document.createElement('div');
-            indicator.className = 'fixed top-20 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 text-sm font-medium';
-            indicator.textContent = '✓ Demo ready!';
-            document.body.appendChild(indicator);
-            setTimeout(() => {
-                indicator.style.opacity = '0';
-                indicator.style.transition = 'opacity 0.3s';
-                setTimeout(() => indicator.remove(), 300);
-            }, 2000);
-        }
-    }
-    originalConsoleLog.apply(console, args);
-};
 

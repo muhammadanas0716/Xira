@@ -356,6 +356,31 @@ body::before {
     }
 }
 
+.feature-tab {
+    transition: all 0.2s ease;
+}
+
+.feature-tab:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.feature-panel {
+    transition: opacity 0.3s ease;
+}
+
+.feature-panel.active {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     * {
         animation-duration: 0.01ms !important;

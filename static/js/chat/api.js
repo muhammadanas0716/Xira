@@ -20,7 +20,6 @@ async function createNewChat() {
     const data = await response.json();
     if (response.ok) {
       currentChatId = data.chat_id;
-      console.log("Chat created:", data);
       
       closeNewChatModal();
       loadChat(data.chat_id);
@@ -47,7 +46,6 @@ async function createNewChat() {
       loadingDiv.classList.add("hidden");
     }
   } catch (error) {
-    console.error("Error:", error);
     alert("An error occurred. Please try again.");
     loadingDiv.classList.add("hidden");
   }

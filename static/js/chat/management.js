@@ -7,11 +7,6 @@ async function loadChat(chatId) {
 
     if (response.ok) {
       currentChatId = chatId;
-      console.log("Chat loaded:", chat);
-      console.log("PDF text length:", chat.pdf_text_length || 0);
-      if (chat.pdf_text_preview) {
-        console.log("PDF text preview:", chat.pdf_text_preview);
-      }
       displayChat(chat);
       if (chat.pdf_filename) {
         setTimeout(() => {
@@ -20,7 +15,6 @@ async function loadChat(chatId) {
       }
     }
   } catch (error) {
-    console.error("Error loading chat:", error);
   }
 }
 
@@ -57,7 +51,6 @@ async function loadChatHistory() {
       )
       .join("");
   } catch (error) {
-    console.error("Error loading chat history:", error);
   }
 }
 
@@ -93,7 +86,6 @@ async function deleteChat(chatId, ticker) {
       alert(data.error || "Failed to delete chat");
     }
   } catch (error) {
-    console.error("Error deleting chat:", error);
     alert("An error occurred while deleting the chat. Please try again.");
   }
 }
@@ -134,7 +126,6 @@ async function deleteAllChats() {
       alert(data.error || "Failed to delete all chats");
     }
   } catch (error) {
-    console.error("Error deleting all chats:", error);
     alert("An error occurred while deleting all chats. Please try again.");
   }
 }

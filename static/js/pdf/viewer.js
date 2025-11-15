@@ -30,13 +30,11 @@ async function renderAllPages() {
       canvas.className = "pdf-page";
       container.appendChild(canvas);
     } catch (error) {
-      console.error(`Error rendering page ${pageNum}:`, error);
     }
   }
 }
 
 async function loadPdfFromUrl(url) {
-  console.log("Loading PDF from URL:", url);
   const pdfPlaceholder = document.getElementById("pdfPlaceholder");
   const pdfLoading = document.getElementById("pdfLoading");
   const pdfViewer = document.getElementById("pdfViewer");
@@ -51,11 +49,9 @@ async function loadPdfFromUrl(url) {
   pdfViewer.innerHTML = "";
 
   try {
-    console.log("Fetching PDF as blob...");
     const response = await fetch(url);
     if (!response.ok) {
       if (response.status === 404) {
-        console.warn("PDF file not found:", url);
         pdfLoading.classList.add("hidden");
         pdfPlaceholder.classList.remove("hidden");
         const statusDiv = document.getElementById("pdfStatusIndicator");
@@ -73,9 +69,7 @@ async function loadPdfFromUrl(url) {
       }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    console.log("PDF fetched, converting to array buffer...");
     const arrayBuffer = await response.arrayBuffer();
-    console.log("Array buffer size:", arrayBuffer.byteLength);
 
     if (arrayBuffer.byteLength === 0) {
       throw new Error("PDF file is empty");
@@ -84,14 +78,11 @@ async function loadPdfFromUrl(url) {
     const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
     const pdf = await loadingTask.promise;
 
-    console.log("PDF loaded, pages:", pdf.numPages);
     pdfDoc = pdf;
     scale = 1.2;
     updateZoomDisplay();
 
     await renderAllPages();
-
-    console.log("All pages rendered");
 
     pdfLoading.classList.add("hidden");
     pdfPlaceholder.classList.add("hidden");
@@ -109,12 +100,7 @@ async function loadPdfFromUrl(url) {
         hidePdfStatus();
       }, 2000);
     }
-
-    console.log("PDF viewer visible:", !pdfViewer.classList.contains("hidden"));
-    console.log("PDF viewer children:", pdfViewer.children.length);
-    console.log("PDF viewer style display:", pdfViewer.style.display);
   } catch (error) {
-    console.error("Error loading PDF:", error);
     pdfLoading.classList.add("hidden");
     pdfViewer.classList.add("hidden");
     pdfViewer.style.display = "none";

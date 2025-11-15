@@ -76,87 +76,53 @@
     <section id="features" class="py-24 px-6 bg-gray-50 relative z-10">
         <div class="max-w-6xl mx-auto">
             <div class="text-center mb-16 fade-in-up">
-                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Why Waste Time When You Can Waste Money?
-                </h2>
-                <p class="text-lg text-gray-600 max-w-2xl mx-auto">Just kidding. We save you both. Here's what makes us
-                    different (and actually useful):</p>
+                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Everything You Need</h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">From quick stats to deep analysis, we've got you covered.</p>
             </div>
-            <div class="grid md:grid-cols-3 gap-8">
-                <div class="feature-card bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl border border-gray-100">
-                    <div class="w-12 h-12 bg-black rounded-xl flex items-center justify-center mb-6">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z">
-                            </path>
-                        </svg>
+            
+            <div class="bg-white rounded-2xl shadow-xl overflow-hidden fade-in-up">
+                <div class="border-b border-gray-200">
+                    <div class="flex overflow-x-auto scrollbar-hide" id="featureTabs">
+                        <button onclick="switchFeatureTab('basic')" data-tab="basic"
+                            class="feature-tab active px-8 py-4 text-lg font-semibold text-gray-900 border-b-2 border-black transition-all whitespace-nowrap">
+                            Simple Questions
+                        </button>
+                        <button onclick="switchFeatureTab('hard')" data-tab="hard"
+                            class="feature-tab px-8 py-4 text-lg font-semibold text-gray-600 border-b-2 border-transparent hover:text-gray-900 transition-all whitespace-nowrap">
+                            Advanced Calculations
+                        </button>
+                        <button onclick="switchFeatureTab('quickStats')" data-tab="quickStats"
+                            class="feature-tab px-8 py-4 text-lg font-semibold text-gray-600 border-b-2 border-transparent hover:text-gray-900 transition-all whitespace-nowrap">
+                            Stock Overview
+                        </button>
+                        <button onclick="switchFeatureTab('advancedReport')" data-tab="advancedReport"
+                            class="feature-tab px-8 py-4 text-lg font-semibold text-gray-600 border-b-2 border-transparent hover:text-gray-900 transition-all whitespace-nowrap">
+                            Full Report
+                        </button>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-3">Chat, Don't Read</h3>
-                    <p class="text-gray-600 leading-relaxed">Ask questions in plain English. Get answers in plain
-                        English. No need to Ctrl+F through 200 pages of legal jargon.</p>
                 </div>
-                <div class="feature-card bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl border border-gray-100">
-                    <div class="w-12 h-12 bg-black rounded-xl flex items-center justify-center mb-6">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
-                            </path>
-                        </svg>
+                
+                <div class="p-8 md:p-12">
+                    <div id="featureContent" class="feature-content">
+                        <div id="basicContent" class="feature-panel active">
+                            <img src="{{ url_for('static', filename='images/basic.png') }}" alt="Basic Features" class="w-full rounded-lg shadow-lg">
+                        </div>
+                        <div id="hardContent" class="feature-panel hidden">
+                            <img src="{{ url_for('static', filename='images/hard.png') }}" alt="Hard Analytical Questions" class="w-full rounded-lg shadow-lg">
+                        </div>
+                        <div id="quickStatsContent" class="feature-panel hidden">
+                            <img src="{{ url_for('static', filename='images/quickStats.png') }}" alt="Quick Stats" class="w-full rounded-lg shadow-lg">
+                        </div>
+                        <div id="advancedReportContent" class="feature-panel hidden">
+                            <img src="{{ url_for('static', filename='images/advancedReport.png') }}" alt="Advanced Report" class="w-full rounded-lg shadow-lg">
+                        </div>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-3">Real SEC Data</h3>
-                    <p class="text-gray-600 leading-relaxed">We pull directly from the SEC. No middlemen, no outdated
-                        info. Just fresh, official financial data when you need it.</p>
-                </div>
-                <div class="feature-card bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl border border-gray-100">
-                    <div class="w-12 h-12 bg-black rounded-xl flex items-center justify-center mb-6">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-3">Instant Insights</h3>
-                    <p class="text-gray-600 leading-relaxed">Get answers in seconds, not hours. Perfect for when you
-                        need to look smart in a meeting that started 5 minutes ago.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="py-24 px-6 bg-white relative z-10">
-        <div class="max-w-6xl mx-auto">
-            <div class="text-center mb-16 fade-in-up">
-                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">How It Works</h2>
-                <p class="text-lg text-gray-600">Three steps. That's it. We promise.</p>
-            </div>
-            <div class="grid md:grid-cols-3 gap-12">
-                <div class="text-center fade-in-up">
-                    <div
-                        class="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">
-                        1</div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-3">Pick a Stock</h3>
-                    <p class="text-gray-600">Enter any ticker symbol. We'll grab the latest 10-Q filing faster than you
-                        can say "quarterly earnings report."</p>
-                </div>
-                <div class="text-center fade-in-up">
-                    <div
-                        class="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">
-                        2</div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-3">Ask Questions</h3>
-                    <p class="text-gray-600">Ask anything. "What's their revenue?" "Why did expenses increase?" "Should
-                        I be worried?" (We'll be honest about that last one.)</p>
-                </div>
-                <div class="text-center fade-in-up">
-                    <div
-                        class="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-6">
-                        3</div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-3">Get Answers</h3>
-                    <p class="text-gray-600">Our AI reads through the entire filing and gives you a clear, concise
-                        answer. Straight to the point, always accurate.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="demo" class="py-24 px-6 bg-gray-50 relative z-10">
+    <section id="demo" class="py-24 px-6 bg-white relative z-10">
         <div class="max-w-6xl mx-auto">
             <div class="text-center mb-12 fade-in-up">
                 <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Try It Yourself</h2>

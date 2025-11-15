@@ -89,7 +89,6 @@ function renderMarkdown(text) {
     const html = marked.parse(processedText);
     return html;
   } catch (e) {
-    console.error("Markdown parsing error:", e);
     return text.replace(/\n/g, "<br>");
   }
 }
@@ -184,7 +183,6 @@ function renderMath(element) {
           strict: false
         });
       } catch (e) {
-        console.error('Error rendering math:', e);
       }
     } else {
       setTimeout(attemptRender, 100);
