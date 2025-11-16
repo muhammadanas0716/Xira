@@ -265,6 +265,32 @@
         </div>
     </footer>
 
+    <div id="waitlistModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl p-8 max-w-md w-[calc(100%-2rem)] mx-4 z-10">
+            <button id="closeWaitlistModal" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Join the Waitlist</h2>
+                <p class="text-gray-600">Get early access when we launch. We'll keep you updated!</p>
+            </div>
+            <form id="waitlistForm" class="space-y-4">
+                <div>
+                    <input type="email" id="waitlistEmail" placeholder="Enter your email" required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent">
+                </div>
+                <button type="submit" id="waitlistSubmit"
+                    class="w-full bg-black text-white font-semibold py-3 px-6 rounded-xl transition-all hover:bg-gray-800">
+                    Join Waitlist
+                </button>
+            </form>
+            <div id="waitlistMessage" class="mt-4 text-sm text-center hidden"></div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/utils/markdown.js') }}"></script>
     <script src="{{ url_for('static', filename='js/landing.js') }}"></script>
 </body>

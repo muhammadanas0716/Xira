@@ -6,6 +6,7 @@ from datetime import datetime, date
 from flask import Blueprint, jsonify, request, session, current_app
 from app import db
 from app.models.chat import Chat, Message, TickerPDF
+from app.models.waitlist import WaitlistEmail
 from app.services.stock_service import stock_service
 from app.services.sec_service import sec_service
 from app.services.pdf_service import pdf_service
@@ -423,3 +424,35 @@ def delete_all_chats():
         import traceback
         traceback.print_exc()
         return jsonify({'error': 'Failed to delete all chats'}), 500
+
+@api_bp.route('/waitlist', methods=['POST'])
+def add_to_waitlist():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid request'}), 400
+    
+    email = sanitize_string(data.get('email', ''), max_length=255)
+    
+    if not email:
+        return jsonify({'error': 'Email is required'}), 400
+    
+    email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    if not re.match(email_pattern, email):
+        return jsonify({'error': 'Invalid email format'}), 400
+    
+    try:
+        existing = WaitlistEmail.query.filter_by(email=email).first()
+        if existing:
+            return jsonify({'success': True, 'message': 'Email already in waitlist'}), 200
+        
+        waitlist_email = WaitlistEmail(email=email)
+        db.session.add(waitlist_email)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Email added to waitlist successfully'}), 201
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error adding email to waitlist: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Failed to add email to waitlist'}), 500

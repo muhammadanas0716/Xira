@@ -42,6 +42,7 @@ def create_app():
     app.register_blueprint(db_init_bp)
     
     from app.models.chat import Chat, Message, TickerPDF
+    from app.models.waitlist import WaitlistEmail
     
     @app.before_request
     def ensure_database_initialized():

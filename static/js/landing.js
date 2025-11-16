@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeStatAnimations();
     initializeFeatureCards();
     addEasterEggs();
+    initializeWaitlistModal();
     
     const demoInput = document.getElementById('demoChatInput');
     if (demoInput) {
@@ -142,6 +143,11 @@ async function sendDemoMessage() {
         return;
     }
 
+    const isFirstQuery = !localStorage.getItem('demo_query_sent');
+    if (isFirstQuery) {
+        localStorage.setItem('demo_query_sent', 'true');
+    }
+
     if (!demoChatId && chatCreationPromise) {
         await chatCreationPromise;
     }
@@ -206,6 +212,12 @@ async function sendDemoMessage() {
         }
         
         container.scrollTop = container.scrollHeight;
+        
+        if (isFirstQuery) {
+            setTimeout(() => {
+                showWaitlistModal();
+            }, 500);
+        }
     } catch (error) {
         const lastMsg = messagesDiv.lastElementChild;
         if (lastMsg) {
@@ -382,6 +394,88 @@ function switchFeatureTab(tabName) {
     if (activePanel) {
         activePanel.classList.remove('hidden');
         activePanel.classList.add('active');
+    }
+}
+
+function initializeWaitlistModal() {
+    const modal = document.getElementById('waitlistModal');
+    const closeBtn = document.getElementById('closeWaitlistModal');
+    const form = document.getElementById('waitlistForm');
+    const emailInput = document.getElementById('waitlistEmail');
+    const submitBtn = document.getElementById('waitlistSubmit');
+    const messageDiv = document.getElementById('waitlistMessage');
+    
+    if (!modal || !closeBtn || !form) return;
+    
+    function hideModal() {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+    
+    function showMessage(text, isError = false) {
+        messageDiv.textContent = text;
+        messageDiv.className = `mt-4 text-sm text-center ${isError ? 'text-red-600' : 'text-green-600'}`;
+        messageDiv.classList.remove('hidden');
+    }
+    
+    closeBtn.addEventListener('click', hideModal);
+    
+    const backdrop = modal.querySelector('.backdrop-blur-sm');
+    if (backdrop) {
+        backdrop.addEventListener('click', hideModal);
+    }
+    
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const email = emailInput.value.trim();
+        if (!email) {
+            showMessage('Please enter your email', true);
+            return;
+        }
+        
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Joining...';
+        
+        try {
+            const response = await fetch('/api/waitlist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email }),
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                showMessage('Thanks! We\'ll be in touch soon.', false);
+                emailInput.value = '';
+                setTimeout(() => {
+                    hideModal();
+                    setTimeout(() => {
+                        messageDiv.classList.add('hidden');
+                    }, 300);
+                }, 2000);
+            } else {
+                showMessage(data.error || 'Something went wrong. Please try again.', true);
+            }
+        } catch (error) {
+            showMessage('Network error. Please try again.', true);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Join Waitlist';
+        }
+    });
+}
+
+function showWaitlistModal() {
+    const modal = document.getElementById('waitlistModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        const emailInput = document.getElementById('waitlistEmail');
+        if (emailInput) {
+            setTimeout(() => emailInput.focus(), 100);
+        }
     }
 }
 
