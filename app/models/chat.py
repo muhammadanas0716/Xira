@@ -75,12 +75,17 @@ class Chat(db.Model):
         if not pdf_text:
             return None
         
+        context = ""
+        ticker_pdf = self.ticker_pdf
+        if ticker_pdf and ticker_pdf.period_end_date:
+            context = f"\n\nReporting period end date: {ticker_pdf.period_end_date.isoformat()}\n"
+        
         if is_continuation:
-            return f"""SEC filing document (same as previous conversation):
+            return f"""SEC filing document (same as previous conversation):{context}
 
 {pdf_text}"""
         else:
-            return f"""SEC filing document:
+            return f"""SEC filing document:{context}
 
 {pdf_text}"""
 

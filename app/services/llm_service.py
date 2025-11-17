@@ -82,6 +82,8 @@ FORMATTING:
 
 Answer concisely and clearly. Search the entire document (financial statements, MD&A, footnotes, tables).
 
+When comparing to "last quarter" or "previous quarter", identify the current reporting period from the document and compare it to the immediately preceding quarter shown in the financial statements.
+
 Format:
 - Use headings (##) to organize longer answers with multiple topics
 - Use tables when helpful: comparisons, financial metrics across periods, ratios, structured data
@@ -149,6 +151,8 @@ If the answer isn't in the document, say so directly."""})
             messages.append({"role": "user", "content": f"""Question: {question}
 
 Answer concisely and clearly. Search the entire document (financial statements, MD&A, footnotes, tables).
+
+When comparing to "last quarter" or "previous quarter", identify the current reporting period from the document and compare it to the immediately preceding quarter shown in the financial statements.
 
 Format:
 - Use headings (##) to organize longer answers with multiple topics
