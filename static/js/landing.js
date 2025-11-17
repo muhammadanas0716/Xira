@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     demoInput.addEventListener("blur", function () {
       this.placeholder =
-        "Ask a question about Apple's financials... (e.g., 'What was their revenue?')";
+        "Ask a question about Tesla's financials... (e.g., 'Calculate the company's free cash flow yield')";
     });
   }
 });
@@ -66,7 +66,7 @@ async function createDemoChat() {
     const response = await fetch("/api/create-chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ticker: "AAPL" }),
+      body: JSON.stringify({ ticker: "TSLA", is_demo: true }),
     });
 
     const data = await response.json();
@@ -101,7 +101,7 @@ function showDemoReady() {
   if (input) {
     input.disabled = false;
     input.placeholder =
-      "Ask a question about Apple's financials... (e.g., 'What was their revenue?')";
+      "Ask a question about Tesla's financials... (e.g., 'Calculate the company's free cash flow yield')";
   }
   if (sendButton) {
     sendButton.disabled = false;
