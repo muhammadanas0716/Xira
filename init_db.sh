@@ -3,7 +3,6 @@
 # Initialize database schema
 # Usage: ./init_db.sh [url]
 # Example: ./init_db.sh http://localhost:5000
-# Example: ./init_db.sh https://your-app.vercel.app
 
 URL=${1:-http://localhost:5000}
 

@@ -3,15 +3,6 @@ import os
 import yfinance as yf
 from app.utils.config import Config
 
-if os.getenv('VERCEL'):
-    cache_dir = '/tmp/.cache/py-yfinance'
-    os.makedirs(cache_dir, exist_ok=True)
-    try:
-        import yfinance.cache as yf_cache
-        yf_cache.set_tz_cache_location(cache_dir)
-    except:
-        pass
-
 try:
     from polygon import RESTClient
     POLYGON_AVAILABLE = True

@@ -17,10 +17,6 @@ def create_app():
     db.init_app(app)
     
     allowed_origins = os.getenv('ALLOWED_ORIGINS', 'http://localhost:5000,http://localhost:5001').split(',')
-    if os.getenv('VERCEL'):
-        vercel_url = os.getenv('VERCEL_URL', '')
-        if vercel_url:
-            allowed_origins.append(f'https://{vercel_url}')
     CORS(app, origins=allowed_origins if allowed_origins else ['*'], supports_credentials=True)
     
     @app.after_request

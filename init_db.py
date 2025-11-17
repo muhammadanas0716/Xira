@@ -3,7 +3,6 @@
 Initialize database schema
 Usage: python init_db.py [url]
 Example: python init_db.py http://localhost:5000
-Example: python init_db.py https://your-app.vercel.app
 """
 
 import sys

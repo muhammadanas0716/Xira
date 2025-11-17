@@ -480,3 +480,48 @@ def add_to_waitlist():
         import traceback
         traceback.print_exc()
         return jsonify({'error': 'Failed to add email to waitlist'}), 500
+
+@api_bp.route('/admin/waitlist', methods=['GET'])
+def get_waitlist():
+    if not session.get('dashboard_authenticated', False):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        waitlist_emails = WaitlistEmail.query.order_by(WaitlistEmail.created_at.desc()).all()
+        return jsonify({
+            'success': True,
+            'data': [email.to_dict() for email in waitlist_emails],
+            'count': len(waitlist_emails)
+        })
+    except Exception as e:
+        print(f"Error fetching waitlist: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Failed to fetch waitlist'}), 500
+
+@api_bp.route('/admin/messages', methods=['GET'])
+def get_messages():
+    if not session.get('dashboard_authenticated', False):
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        messages = Message.query.order_by(Message.created_at.desc()).all()
+        result = []
+        for msg in messages:
+            result.append({
+                'id': msg.id,
+                'chat_id': msg.chat_id,
+                'question': msg.question,
+                'answer': msg.answer,
+                'created_at': msg.created_at.isoformat() if msg.created_at else None
+            })
+        return jsonify({
+            'success': True,
+            'data': result,
+            'count': len(result)
+        })
+    except Exception as e:
+        print(f"Error fetching messages: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'Failed to fetch messages'}), 500

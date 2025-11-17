@@ -67,3 +67,9 @@ def privacy():
 def terms():
     return render_template('terms.html')
 
+@main_bp.route('/admin')
+def admin():
+    if not session.get('dashboard_authenticated', False):
+        return render_template('admin.html', show_pin_modal=True)
+    return render_template('admin.html', show_pin_modal=False)
+
