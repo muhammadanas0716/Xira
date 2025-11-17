@@ -295,6 +295,25 @@ function copyChatId() {
     });
 }
 
+function copyQuestion() {
+    const element = document.getElementById('detailQuestion');
+    const text = element.textContent.trim();
+    const button = document.getElementById('copyQuestionBtn');
+    
+    navigator.clipboard.writeText(text).then(() => {
+        const originalText = button.innerHTML;
+        button.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Copied';
+        button.classList.add('text-green-600');
+        
+        setTimeout(() => {
+            button.innerHTML = originalText;
+            button.classList.remove('text-green-600');
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+    });
+}
+
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -310,6 +329,80 @@ function formatDate(dateString) {
     if (diffDays < 7) return `${diffDays}d ago`;
     
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function exportWaitlistCSV() {
+    if (!waitlistData || waitlistData.length === 0) {
+        alert('No waitlist data to export');
+        return;
+    }
+    
+    const headers = ['Email', 'Joined Date'];
+    const rows = waitlistData.map(item => {
+        const date = item.created_at ? new Date(item.created_at).toLocaleString() : 'N/A';
+        return [escapeCsvField(item.email), escapeCsvField(date)];
+    });
+    
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `waitlist_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function exportMessagesCSV() {
+    if (!messagesData || messagesData.length === 0) {
+        alert('No messages data to export');
+        return;
+    }
+    
+    const headers = ['Chat ID', 'Question', 'Answer', 'Timestamp'];
+    const rows = messagesData.map(item => {
+        const date = item.created_at ? new Date(item.created_at).toLocaleString() : 'N/A';
+        return [
+            escapeCsvField(item.chat_id),
+            escapeCsvField(item.question),
+            escapeCsvField(item.answer),
+            escapeCsvField(date)
+        ];
+    });
+    
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `messages_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function escapeCsvField(field) {
+    if (field === null || field === undefined) return '';
+    const stringField = String(field);
+    if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+        return `"${stringField.replace(/"/g, '""')}"`;
+    }
+    return stringField;
 }
 
 
