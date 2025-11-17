@@ -11,6 +11,7 @@ class Config:
     SEC_API_KEY = os.getenv('SEC_API_KEY')
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
     POLYGON_API_KEY = os.getenv('POLYGON_API_KEY')
+    DASHBOARD_PIN = os.getenv('DASHBOARD_PIN', '071600')
     
     DATABASE_URL = os.getenv('DATABASE_URL')
     

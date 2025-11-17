@@ -398,6 +398,24 @@ def get_report(chat_id):
         'stock_info': chat.stock_info
     })
 
+@api_bp.route('/validate-dashboard-pin', methods=['POST'])
+def validate_dashboard_pin():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid request'}), 400
+    
+    pin = sanitize_string(data.get('pin', ''), max_length=20)
+    
+    if not pin:
+        return jsonify({'error': 'PIN is required'}), 400
+    
+    if pin == Config.DASHBOARD_PIN:
+        session['dashboard_authenticated'] = True
+        session.permanent = True
+        return jsonify({'success': True, 'message': 'PIN validated successfully'})
+    else:
+        return jsonify({'error': 'Invalid PIN'}), 401
+
 @api_bp.route('/chats/<chat_id>', methods=['DELETE'])
 def delete_chat(chat_id):
     if not chat_id or len(chat_id) > 100:
