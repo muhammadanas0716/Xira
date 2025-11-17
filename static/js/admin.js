@@ -240,12 +240,21 @@ function filterMessages() {
 function showMessageDetail(message) {
     document.getElementById('detailChatId').textContent = message.chat_id;
     document.getElementById('detailQuestion').textContent = message.question;
-    document.getElementById('detailAnswer').textContent = message.answer;
+    
+    const answerElement = document.getElementById('detailAnswer');
+    answerElement.innerHTML = renderMarkdown(message.answer || '');
+    
+    if (typeof renderMath === 'function') {
+        renderMath(answerElement);
+    }
+    
     document.getElementById('detailTimestamp').textContent = formatDate(message.created_at);
     
     const modal = document.getElementById('messageDetailModal');
     const modalContent = modal.querySelector('.modal-content');
+    const body = document.body;
     
+    body.classList.add('modal-open');
     modal.classList.remove('hidden');
     setTimeout(() => {
         modal.classList.add('show');
@@ -256,9 +265,11 @@ function showMessageDetail(message) {
 function closeMessageDetail() {
     const modal = document.getElementById('messageDetailModal');
     const modalContent = modal.querySelector('.modal-content');
+    const body = document.body;
     
     modal.classList.remove('show');
     modalContent.classList.remove('show');
+    body.classList.remove('modal-open');
     
     setTimeout(() => {
         modal.classList.add('hidden');
