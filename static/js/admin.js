@@ -133,10 +133,23 @@ function renderWaitlist(data) {
     data.forEach((item, index) => {
         const row = document.createElement('tr');
         const date = formatDate(item.created_at);
-        row.className = 'hover:bg-gray-50 transition-colors';
+        row.className = 'hover:bg-gray-50 transition-colors group';
         row.innerHTML = `
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">${index + 1}</td>
-            <td class="px-6 py-4 text-sm text-gray-900">${escapeHtml(item.email)}</td>
+            <td class="px-6 py-4 text-sm text-gray-900">
+                <div class="flex items-center gap-2 group">
+                    <span class="font-medium">${escapeHtml(item.email)}</span>
+                    <button 
+                        onclick="copyEmail('${escapeHtml(item.email).replace(/'/g, "\\'").replace(/"/g, '&quot;')}', this)" 
+                        class="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100"
+                        title="Copy email"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHtml(date)}</td>
         `;
         tbody.appendChild(row);
@@ -213,8 +226,8 @@ function renderMessages(data) {
         
         row.className = 'hover:bg-gray-50 cursor-pointer transition-colors';
         row.innerHTML = `
-            <td class="px-6 py-4 text-sm font-mono text-gray-600">${escapeHtml(item.chat_id.substring(0, 8))}...</td>
-            <td class="px-6 py-4 text-sm text-gray-900">${questionPreview}</td>
+            <td class="px-6 py-4 text-sm font-mono text-gray-600 font-medium">${escapeHtml(item.chat_id.substring(0, 8))}...</td>
+            <td class="px-6 py-4 text-sm text-gray-900 font-medium">${questionPreview}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHtml(date)}</td>
         `;
         row.onclick = () => showMessageDetail(item);
@@ -311,6 +324,23 @@ function copyQuestion() {
         }, 2000);
     }).catch(err => {
         console.error('Failed to copy:', err);
+    });
+}
+
+function copyEmail(email, button) {
+    navigator.clipboard.writeText(email).then(() => {
+        if (button) {
+            const originalHTML = button.innerHTML;
+            button.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            button.classList.add('text-green-600');
+            
+            setTimeout(() => {
+                button.innerHTML = originalHTML;
+                button.classList.remove('text-green-600');
+            }, 2000);
+        }
+    }).catch(err => {
+        console.error('Failed to copy email:', err);
     });
 }
 
