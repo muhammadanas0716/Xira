@@ -32,10 +32,12 @@ def create_app():
     from app.routes.main import main_bp
     from app.routes.api import api_bp
     from app.routes.db_init import db_init_bp
+    from app.routes.admin import admin_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(db_init_bp)
+    app.register_blueprint(admin_bp)
     
     from app.models.chat import Chat, Message, TickerPDF
     from app.models.waitlist import WaitlistEmail
