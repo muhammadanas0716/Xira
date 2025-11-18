@@ -1,5 +1,6 @@
 let currentPage = 1;
 let totalPages = 1;
+let currentMessage = null;
 
 async function validatePin() {
     const pinInput = document.getElementById('pinInput');
@@ -47,6 +48,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    const messageModal = document.getElementById('messageModal');
+    if (messageModal) {
+        messageModal.addEventListener('click', function(e) {
+            if (e.target === messageModal) {
+                closeMessageModal();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('messageModal');
+            if (modal && !modal.classList.contains('hidden')) {
+                closeMessageModal();
+            }
+        }
+    });
+
     loadStats();
     loadWaitlist();
     loadMessages();
@@ -72,7 +91,7 @@ async function loadStats() {
 
 async function loadWaitlist() {
     const container = document.getElementById('waitlistContainer');
-    container.innerHTML = '<div class="text-center text-gray-500 py-8">Loading...</div>';
+    container.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-8">Loading...</td></tr>';
 
     try {
         const response = await fetch('/api/admin/waitlist', {
@@ -81,37 +100,41 @@ async function loadWaitlist() {
         const emails = await response.json();
 
         if (emails.length === 0) {
-            container.innerHTML = '<div class="text-center text-gray-500 py-8">No waitlist emails yet</div>';
+            container.innerHTML = '<tr><td colspan="3" class="text-center text-gray-500 py-8">No waitlist emails yet</td></tr>';
             return;
         }
 
         container.innerHTML = emails.map(email => `
-            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors group">
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-gray-900 truncate">${escapeHtml(email.email)}</p>
-                    <p class="text-xs text-gray-500 mt-1">${formatDate(email.created_at)}</p>
-                </div>
-                <button 
-                    onclick="copyToClipboard('${escapeHtml(email.email)}', this)"
-                    class="ml-4 px-3 py-2 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 transition-all opacity-0 group-hover:opacity-100"
-                    title="Copy email"
-                >
-                    Copy
-                </button>
-            </div>
+            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                <td class="py-3 px-4">
+                    <span class="text-sm text-gray-900">${escapeHtml(email.email)}</span>
+                </td>
+                <td class="py-3 px-4">
+                    <span class="text-xs text-gray-500">${formatDate(email.created_at)}</span>
+                </td>
+                <td class="py-3 px-4 text-right">
+                    <button 
+                        onclick="copyToClipboard('${escapeHtml(email.email)}', this)"
+                        class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded transition-all"
+                        title="Copy email"
+                    >
+                        Copy
+                    </button>
+                </td>
+            </tr>
         `).join('');
     } catch (error) {
         console.error('Error loading waitlist:', error);
-        container.innerHTML = '<div class="text-center text-red-500 py-8">Error loading waitlist</div>';
+        container.innerHTML = '<tr><td colspan="3" class="text-center text-red-500 py-8">Error loading waitlist</td></tr>';
     }
 }
 
 async function loadMessages(page = 1) {
     const container = document.getElementById('messagesContainer');
-    container.innerHTML = '<div class="text-center text-gray-500 py-8">Loading...</div>';
+    container.innerHTML = '<tr><td colspan="4" class="text-center text-gray-500 py-8">Loading...</td></tr>';
 
     try {
-        const response = await fetch(`/api/admin/messages?page=${page}&per_page=20`, {
+        const response = await fetch(`/api/admin/messages?page=${page}&per_page=30`, {
             credentials: 'include'
         });
         const data = await response.json();
@@ -120,52 +143,124 @@ async function loadMessages(page = 1) {
         totalPages = data.pagination.pages;
 
         if (data.messages.length === 0) {
-            container.innerHTML = '<div class="text-center text-gray-500 py-8">No messages yet</div>';
+            container.innerHTML = '<tr><td colspan="4" class="text-center text-gray-500 py-8">No messages yet</td></tr>';
             document.getElementById('messagesPagination').classList.add('hidden');
             return;
         }
 
-        container.innerHTML = data.messages.map(msg => `
-            <div class="p-5 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
-                <div class="flex items-start justify-between mb-3">
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="text-xs font-mono text-gray-500 bg-white px-2 py-1 rounded border border-gray-200">ID: ${msg.id.substring(0, 8)}...</span>
-                            <span class="text-xs font-medium text-gray-600 bg-white px-2 py-1 rounded border border-gray-200">${msg.ticker}</span>
-                            <span class="text-xs text-gray-500">${formatDate(msg.created_at)}</span>
-                        </div>
-                    </div>
-                    <button 
-                        onclick="copyMessage('${escapeHtml(msg.id)}', '${escapeHtml(msg.question)}', '${escapeHtml(msg.answer)}', this)"
-                        class="ml-4 px-3 py-2 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 transition-all"
-                        title="Copy message"
-                    >
-                        Copy
-                    </button>
-                </div>
-                <div class="space-y-3">
-                    <div>
-                        <p class="text-xs font-semibold text-gray-700 mb-1">Question:</p>
-                        <div class="prose prose-sm max-w-none text-gray-900 bg-white p-3 rounded border border-gray-200">
-                            ${escapeHtml(msg.question)}
-                        </div>
-                    </div>
-                    <div>
-                        <p class="text-xs font-semibold text-gray-700 mb-1">Answer:</p>
-                        <div class="prose prose-sm max-w-none text-gray-900 bg-white p-3 rounded border border-gray-200 markdown-content" data-markdown="${escapeHtml(msg.answer)}">
-                            ${renderMarkdownText(msg.answer)}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `).join('');
+        container.innerHTML = data.messages.map((msg, index) => {
+            const questionPreview = msg.question.length > 80 
+                ? msg.question.substring(0, 80) + '...' 
+                : msg.question;
+
+            return `
+                <tr 
+                    onclick="openMessageModal(${index})"
+                    class="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+                    data-message-index="${index}"
+                >
+                    <td class="py-3 px-4">
+                        <span class="text-sm text-gray-900">${escapeHtml(questionPreview)}</span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded">${escapeHtml(msg.ticker)}</span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="text-xs text-gray-500">${formatDate(msg.created_at)}</span>
+                    </td>
+                    <td class="py-3 px-4 text-right">
+                        <button 
+                            onclick="event.stopPropagation(); copyMessageFromTable(${index}, this)"
+                            class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded transition-all"
+                            title="Copy message"
+                        >
+                            Copy
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        window.messagesData = data.messages;
 
         updatePagination(data.pagination);
-        setTimeout(renderMarkdownElements, 100);
     } catch (error) {
         console.error('Error loading messages:', error);
-        container.innerHTML = '<div class="text-center text-red-500 py-8">Error loading messages</div>';
+        container.innerHTML = '<tr><td colspan="4" class="text-center text-red-500 py-8">Error loading messages</td></tr>';
     }
+}
+
+function openMessageModal(index) {
+    if (!window.messagesData || !window.messagesData[index]) return;
+    
+    const msg = window.messagesData[index];
+    currentMessage = msg;
+    const modal = document.getElementById('messageModal');
+    const content = document.getElementById('messageModalContent');
+    
+    content.innerHTML = `
+        <div class="space-y-6">
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs font-mono text-gray-500 bg-gray-100 px-3 py-1.5 rounded">ID: ${escapeHtml(msg.id)}</span>
+                <span class="text-xs font-medium text-gray-600 bg-gray-100 px-3 py-1.5 rounded">Ticker: ${escapeHtml(msg.ticker)}</span>
+                <span class="text-xs text-gray-500">${formatDate(msg.created_at)}</span>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-gray-700 mb-2">Question:</p>
+                <div class="prose prose-sm max-w-none text-gray-900 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    ${escapeHtml(msg.question)}
+                </div>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-gray-700 mb-2">Answer:</p>
+                <div class="prose prose-sm max-w-none text-gray-900 bg-gray-50 p-4 rounded-lg border border-gray-200 markdown-content" data-markdown="${escapeHtml(msg.answer)}">
+                    ${renderMarkdownText(msg.answer)}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+    
+    setTimeout(() => {
+        renderMarkdownElements();
+    }, 100);
+}
+
+function closeMessageModal() {
+    const modal = document.getElementById('messageModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    document.body.style.overflow = '';
+    currentMessage = null;
+}
+
+function copyMessageFromTable(index, button) {
+    if (!window.messagesData || !window.messagesData[index]) return;
+    const msg = window.messagesData[index];
+    const text = `ID: ${msg.id}\nQuestion: ${msg.question}\n\nAnswer: ${msg.answer}`;
+    copyToClipboard(text, button);
+}
+
+function copyMessageFromModal() {
+    if (!currentMessage) return;
+    const text = `ID: ${currentMessage.id}\nTicker: ${currentMessage.ticker}\nTime: ${formatDate(currentMessage.created_at)}\n\nQuestion:\n${currentMessage.question}\n\nAnswer:\n${currentMessage.answer}`;
+    
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.classList.add('bg-green-600');
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.classList.remove('bg-green-600');
+        }, 2000);
+    }).catch(err => {
+        console.error('Error copying:', err);
+        alert('Failed to copy');
+    });
 }
 
 function updatePagination(pagination) {
@@ -241,20 +336,15 @@ function copyToClipboard(text, button) {
     navigator.clipboard.writeText(text).then(() => {
         const originalText = button.textContent;
         button.textContent = 'Copied!';
-        button.classList.add('bg-green-50', 'text-green-700', 'border-green-300');
+        button.classList.add('bg-green-100', 'text-green-700');
         setTimeout(() => {
             button.textContent = originalText;
-            button.classList.remove('bg-green-50', 'text-green-700', 'border-green-300');
+            button.classList.remove('bg-green-100', 'text-green-700');
         }, 2000);
     }).catch(err => {
         console.error('Error copying:', err);
         alert('Failed to copy');
     });
-}
-
-function copyMessage(id, question, answer, button) {
-    const text = `ID: ${id}\nTime: ${new Date().toISOString()}\n\nQuestion:\n${question}\n\nAnswer:\n${answer}`;
-    copyToClipboard(text, button);
 }
 
 function escapeHtml(text) {
@@ -300,4 +390,3 @@ function renderMarkdownElements() {
         }
     });
 }
-
