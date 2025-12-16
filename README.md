@@ -1,8 +1,8 @@
 # Xira - Financial Research Assistant
 
-<div align="center">
-  <img src="static/images/logo.png" alt="Xira Logo" width="120" height="120">
-</div>
+
+<img width="3508" height="2344" alt="image" src="https://github.com/user-attachments/assets/1f37fb6c-5782-4032-a885-d0c96d31e937" />
+
 
 A Flask-based web application for analyzing stock tickers, downloading SEC 10-Q reports, and asking questions about them using AI.
 
