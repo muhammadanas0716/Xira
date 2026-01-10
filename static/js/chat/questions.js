@@ -90,6 +90,7 @@ async function askQuestion() {
     const response = await fetch(`/api/chats/${currentChatId}/ask`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: 'include',
       body: JSON.stringify({ question: question }),
       signal: currentAbortController.signal,
     });

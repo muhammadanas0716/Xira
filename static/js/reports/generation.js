@@ -27,6 +27,7 @@ async function generateReport() {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include',
       }
     );
 

@@ -1,24 +1,28 @@
-import os
 import re
 import uuid
 import threading
-from datetime import datetime, date
-from flask import Blueprint, jsonify, request, session, current_app
+from datetime import datetime
+from flask import Blueprint, jsonify, request, current_app
+from flask_login import login_required, current_user
 from app import db
-from app.models.chat import Chat, Message, TickerPDF
+from app.models.chat import Chat, Message, SECFiling
 from app.models.waitlist import WaitlistEmail
 from app.services.stock_service import stock_service
 from app.services.sec_service import sec_service
 from app.services.pdf_service import pdf_service
 from app.services.llm_service import llm_service
+from app.services.vector_service import vector_service
+from app.services.chunking_service import chunking_service
 from app.utils.config import Config
 
 api_bp = Blueprint('api', __name__)
+
 
 def validate_ticker(ticker):
     if not ticker or len(ticker) > 10:
         return False
     return bool(re.match(r'^[A-Z0-9]{1,10}$', ticker))
+
 
 def sanitize_string(value, max_length=10000):
     if not isinstance(value, str):
@@ -27,456 +31,478 @@ def sanitize_string(value, max_length=10000):
         return None
     return value.strip()
 
-def parse_filing_date(filed_at_str):
-    if not filed_at_str:
+
+def parse_date(date_str):
+    if not date_str:
         return None
     try:
-        if isinstance(filed_at_str, str):
-            if 'T' in filed_at_str:
-                return datetime.fromisoformat(filed_at_str.replace('Z', '+00:00')).date()
-            else:
-                return datetime.strptime(filed_at_str, '%Y-%m-%d').date()
+        if isinstance(date_str, str):
+            return datetime.strptime(date_str[:10], '%Y-%m-%d').date()
         return None
-    except Exception as e:
-        print(f"Error parsing filing date {filed_at_str}: {e}")
+    except Exception:
         return None
 
-def get_latest_filing_date_for_ticker(ticker):
-    latest_pdf = TickerPDF.query.filter_by(ticker=ticker).order_by(TickerPDF.filing_date.desc()).first()
-    return latest_pdf.filing_date if latest_pdf else None
 
-def download_and_extract_pdf_background(chat_id, ticker, app):
+# Filing endpoints
+
+@api_bp.route('/filings/<ticker>', methods=['GET'])
+@login_required
+def get_available_filings(ticker):
+    """Get all available SEC filings for a ticker"""
+    ticker = ticker.strip().upper()
+
+    if not validate_ticker(ticker):
+        return jsonify({'error': 'Invalid ticker symbol'}), 400
+
+    filings = sec_service.get_all_10q_filings(ticker, limit=20)
+
+    if not filings:
+        return jsonify({'error': 'No filings found for this ticker'}), 404
+
+    result = []
+    for filing in filings:
+        existing = SECFiling.query.filter_by(accession_number=filing['accession_number']).first()
+
+        result.append({
+            'accession_number': filing['accession_number'],
+            'form_type': filing['form_type'],
+            'fiscal_year': filing['fiscal_year'],
+            'fiscal_quarter': filing['fiscal_quarter'],
+            'fiscal_period': f"FY{filing['fiscal_year']} Q{filing['fiscal_quarter']}" if filing['fiscal_quarter'] else f"FY{filing['fiscal_year']}",
+            'filing_date': filing['filing_date'],
+            'period_end_date': filing['period_end_date'],
+            'is_embedded': existing.is_embedded if existing else False,
+            'id': existing.id if existing else None
+        })
+
+    return jsonify({
+        'ticker': ticker,
+        'filings': result
+    })
+
+
+@api_bp.route('/filings/<filing_id>/embed', methods=['POST'])
+@login_required
+def embed_filing(filing_id):
+    """Start embedding process for a filing"""
+    filing = SECFiling.query.get(filing_id)
+
+    if not filing:
+        return jsonify({'error': 'Filing not found'}), 404
+
+    if filing.is_embedded:
+        return jsonify({
+            'success': True,
+            'message': 'Filing already embedded',
+            'filing': filing.to_dict()
+        })
+
+    thread = threading.Thread(
+        target=embed_filing_background,
+        args=(filing_id, current_app._get_current_object())
+    )
+    thread.daemon = True
+    thread.start()
+
+    return jsonify({
+        'success': True,
+        'message': 'Embedding process started',
+        'filing_id': filing_id
+    })
+
+
+def embed_filing_background(filing_id, app):
+    """Background task to embed a filing"""
     try:
-        if not Config.SEC_API_KEY:
-            print("SEC_API_KEY not configured")
-            return
-        
-        print(f"Checking for latest 10-Q filing for {ticker}...")
-        filing_info = sec_service.get_latest_10q_url(ticker)
-        
-        if not filing_info or not filing_info.get('url'):
-            print(f"No filing URL found for {ticker}")
-            return
-        
-        filing_date = parse_filing_date(filing_info.get('filed_at'))
-        if not filing_date:
-            print(f"Could not parse filing date for {ticker}")
-            return
-        
-        print(f"Latest filing date for {ticker}: {filing_date}")
-        
         with app.app_context():
-            existing_pdf = TickerPDF.query.filter_by(ticker=ticker, filing_date=filing_date).first()
-            
-            if existing_pdf:
-                print(f"PDF for {ticker} with filing date {filing_date} already exists")
-                chat = Chat.query.get(chat_id)
-                if chat and not chat.filing_date:
-                    chat.filing_date = filing_date
-                    db.session.commit()
+            filing = SECFiling.query.get(filing_id)
+            if not filing:
+                print(f"Filing {filing_id} not found")
                 return
-            
-            latest_existing_date = get_latest_filing_date_for_ticker(ticker)
-            if latest_existing_date and filing_date <= latest_existing_date:
-                print(f"Filing date {filing_date} is not newer than existing {latest_existing_date}")
-                chat = Chat.query.get(chat_id)
-                if chat and not chat.filing_date:
-                    chat.filing_date = latest_existing_date
-                    db.session.commit()
-                return
-        
-        filing_url = filing_info['url']
-        print(f"Downloading PDF for {ticker} from {filing_url}...")
-        
-        filename = f"{ticker}_{filing_date}_10Q.pdf"
-        
-        result = sec_service.download_pdf(filing_url, ticker, filename)
-        if not result:
-            print(f"Failed to download PDF for {ticker}")
-            return
-        
-        pdf_text = pdf_service.extract_text(result)
-        if not pdf_text:
-            print(f"Failed to extract text from PDF for {ticker}")
-            return
-        
-        print(f"PDF text extracted successfully, length: {len(pdf_text)} characters")
-        
-        with app.app_context():
-            period_end_date = None
-            if filing_info.get('period_end_date'):
-                period_end_date = parse_filing_date(filing_info['period_end_date'])
-            
-            filed_at_dt = None
-            if filing_info.get('filed_at'):
-                try:
-                    filed_at_str = filing_info['filed_at']
-                    if 'T' in filed_at_str:
-                        filed_at_dt = datetime.fromisoformat(filed_at_str.replace('Z', '+00:00'))
-                    else:
-                        filed_at_dt = datetime.strptime(filed_at_str, '%Y-%m-%d')
-                except Exception as e:
-                    print(f"Error parsing filed_at datetime: {e}")
-            
-            ticker_pdf = TickerPDF(
-                ticker=ticker,
-                filing_date=filing_date,
-                pdf_text=pdf_text,
-                pdf_filename=result,
-                filed_at=filed_at_dt,
-                period_end_date=period_end_date,
-                accession_number=filing_info.get('accession_number')
-            )
-            db.session.add(ticker_pdf)
-            
-            chat = Chat.query.get(chat_id)
-            if chat:
-                chat.filing_date = filing_date
+
+            if not filing.pdf_filename:
+                print(f"Downloading PDF for {filing.ticker}...")
+                filename = f"{filing.ticker}_{filing.accession_number.replace('-', '')}_10Q.pdf"
+                result = sec_service.download_pdf(filing.filing_url, filing.ticker, filename)
+
+                if not result:
+                    print(f"Failed to download PDF for {filing.ticker}")
+                    return
+
+                filing.pdf_filename = result
                 db.session.commit()
-                chat.get_pdf_message(is_continuation=False)
-                print(f"PDF message pre-cached for LLM, ready to answer questions")
+
+            import os
+            filepath = os.path.join(Config.DOWNLOADS_DIR, filing.pdf_filename)
+            pdf_text = pdf_service.extract_text(filepath)
+
+            if not pdf_text:
+                print(f"Failed to extract text from PDF for {filing.ticker}")
+                return
+
+            print(f"Extracted {len(pdf_text)} characters from PDF")
+
+            filing_metadata = {
+                'ticker': filing.ticker,
+                'form_type': filing.form_type,
+                'fiscal_year': filing.fiscal_year,
+                'fiscal_quarter': filing.fiscal_quarter,
+                'filing_date': filing.filing_date.isoformat() if filing.filing_date else '',
+                'accession_number': filing.accession_number
+            }
+
+            chunks = chunking_service.chunk_document(pdf_text, filing_metadata)
+
+            if not chunks:
+                print(f"Failed to chunk document for {filing.ticker}")
+                return
+
+            namespace = filing.get_namespace()
+            success = vector_service.upsert_chunks(chunks, namespace)
+
+            if success:
+                filing.is_embedded = True
+                filing.embedded_at = datetime.utcnow()
+                filing.total_chunks = len(chunks)
+                filing.pinecone_namespace = namespace
+                db.session.commit()
+                print(f"Successfully embedded filing {filing.ticker} with {len(chunks)} chunks")
             else:
-                db.session.commit()
+                print(f"Failed to upsert chunks for {filing.ticker}")
+
     except Exception as e:
-        print(f"Error in background PDF download: {e}")
+        print(f"Error in background embedding: {e}")
         import traceback
         traceback.print_exc()
 
+
+@api_bp.route('/filings/<filing_id>/status', methods=['GET'])
+@login_required
+def get_filing_status(filing_id):
+    """Get embedding status for a filing"""
+    filing = SECFiling.query.get(filing_id)
+
+    if not filing:
+        return jsonify({'error': 'Filing not found'}), 404
+
+    return jsonify(filing.to_dict())
+
+
+# Chat endpoints
+
 @api_bp.route('/create-chat', methods=['POST'])
+@login_required
 def create_chat():
+    """Create a new chat for a specific filing"""
     data = request.get_json()
     if not data:
         return jsonify({'error': 'Invalid request'}), 400
-    
+
     ticker = data.get('ticker', '').strip().upper()
-    is_demo = data.get('is_demo', False)
-    
+    accession_number = data.get('accession_number', '').strip()
+
     if not validate_ticker(ticker):
         return jsonify({'error': 'Invalid ticker symbol'}), 400
-    
+
+    if not accession_number:
+        return jsonify({'error': 'Filing accession number is required'}), 400
+
+    filing = SECFiling.query.filter_by(accession_number=accession_number).first()
+
+    if not filing:
+        filing_info = sec_service.get_filing_by_accession(accession_number)
+
+        if not filing_info:
+            return jsonify({'error': 'Filing not found'}), 404
+
+        filing = SECFiling(
+            ticker=ticker,
+            form_type=filing_info.get('form_type', '10-Q'),
+            fiscal_year=filing_info.get('fiscal_year', 0),
+            fiscal_quarter=filing_info.get('fiscal_quarter'),
+            filing_date=parse_date(filing_info.get('filing_date')),
+            period_end_date=parse_date(filing_info.get('period_end_date')),
+            accession_number=accession_number,
+            filing_url=filing_info.get('url')
+        )
+        db.session.add(filing)
+        db.session.commit()
+
     stock_info = stock_service.get_stock_info(ticker)
-    if not stock_info:
-        return jsonify({'error': 'Failed to fetch stock information'}), 400
-    
-    filing_date = None
-    ticker_pdf = None
-    pdf_text = None
-    
-    if is_demo:
-        try:
-            demo_filing_date = date(2025, 10, 22)
-            ticker_pdf = TickerPDF.query.filter_by(ticker=ticker, filing_date=demo_filing_date).first()
-            if ticker_pdf:
-                filing_date = ticker_pdf.filing_date
-                pdf_text = ticker_pdf.pdf_text
-                print(f"[DEMO] Using specific PDF for {ticker} (filing date: {filing_date})")
-            else:
-                return jsonify({'error': f'Demo PDF not found in database for {ticker} (filing date: 2025-10-22). Please ensure TSLA_2025-10-22_10Q.pdf is available.'}), 404
-        except Exception as db_error:
-            error_msg = str(db_error)
-            if 'does not exist' in error_msg.lower() or 'undefinedcolumn' in error_msg.lower():
-                print(f"Database schema mismatch detected. Please call POST /api/db/init to fix the database schema.")
-                return jsonify({
-                    'error': 'Database schema mismatch. Please initialize the database by calling POST /api/db/init',
-                    'details': 'The database tables exist but have an incorrect schema. This usually happens after code changes.'
-                }), 500
-            raise
-    else:
-        if Config.SEC_API_KEY:
-            filing_info = sec_service.get_latest_10q_url(ticker)
-            if filing_info and filing_info.get('url'):
-                filing_date = parse_filing_date(filing_info.get('filed_at'))
-                if filing_date:
-                    try:
-                        ticker_pdf = TickerPDF.query.filter_by(ticker=ticker, filing_date=filing_date).first()
-                        if ticker_pdf:
-                            pdf_text = ticker_pdf.pdf_text
-                            print(f"Using existing PDF text for {ticker} (filing date: {filing_date})")
-                    except Exception as db_error:
-                        error_msg = str(db_error)
-                        if 'does not exist' in error_msg.lower() or 'undefinedcolumn' in error_msg.lower():
-                            print(f"Database schema mismatch detected. Please call POST /api/db/init to fix the database schema.")
-                            return jsonify({
-                                'error': 'Database schema mismatch. Please initialize the database by calling POST /api/db/init',
-                                'details': 'The database tables exist but have an incorrect schema. This usually happens after code changes.'
-                            }), 500
-                        raise
-        
-        if not ticker_pdf:
-            try:
-                latest_pdf = TickerPDF.query.filter_by(ticker=ticker).order_by(TickerPDF.filing_date.desc()).first()
-                if latest_pdf:
-                    ticker_pdf = latest_pdf
-                    filing_date = latest_pdf.filing_date
-                    pdf_text = latest_pdf.pdf_text
-                    print(f"Using latest existing PDF for {ticker} (filing date: {filing_date})")
-            except Exception as db_error:
-                error_msg = str(db_error)
-                if 'does not exist' in error_msg.lower() or 'undefinedcolumn' in error_msg.lower():
-                    print(f"Database schema mismatch detected. Please call POST /api/db/init to fix the database schema.")
-                    return jsonify({
-                        'error': 'Database schema mismatch. Please initialize the database by calling POST /api/db/init',
-                        'details': 'The database tables exist but have an incorrect schema. This usually happens after code changes.'
-                    }), 500
-                raise
-    
+
     chat = Chat(
+        user_id=current_user.id,
+        filing_id=filing.id,
         ticker=ticker,
-        filing_date=filing_date,
         stock_info=stock_info
     )
-    
     db.session.add(chat)
     db.session.commit()
-    
-    if pdf_text:
-        chat.get_pdf_message(is_continuation=False)
-        print(f"PDF message pre-cached for LLM, ready to answer questions")
-    else:
-        if not is_demo:
-            print(f"Starting background PDF download for {ticker}...")
-            thread = threading.Thread(target=download_and_extract_pdf_background, args=(chat.id, ticker, current_app._get_current_object()))
-            thread.daemon = True
-            thread.start()
-        else:
-            print(f"[DEMO] No PDF available for {ticker} - demo requires existing PDF in database")
-    
-    pdf_filename = ticker_pdf.pdf_filename if ticker_pdf else None
-    
+
+    if not filing.is_embedded:
+        thread = threading.Thread(
+            target=embed_filing_background,
+            args=(filing.id, current_app._get_current_object())
+        )
+        thread.daemon = True
+        thread.start()
+
     return jsonify({
         'chat_id': chat.id,
         'ticker': ticker,
-        'filing_date': filing_date.isoformat() if filing_date else None,
+        'filing': filing.to_dict(),
         'stock_info': stock_info,
-        'has_pdf': pdf_text is not None,
-        'pdf_text_length': len(pdf_text) if pdf_text else 0,
-        'pdf_filename': pdf_filename,
-        'pdf_downloading': not pdf_text and Config.SEC_API_KEY is not None
+        'is_embedded': filing.is_embedded,
+        'embedding_in_progress': not filing.is_embedded
     })
 
+
 @api_bp.route('/chats', methods=['GET'])
+@login_required
 def list_chats():
-    chats = Chat.query.order_by(Chat.created_at.desc()).all()
+    """List all chats for current user"""
+    chats = Chat.query.filter_by(user_id=current_user.id).order_by(Chat.created_at.desc()).all()
+
     return jsonify([{
         'id': chat.id,
         'ticker': chat.ticker,
+        'filing': chat.filing.to_dict() if chat.filing else None,
         'created_at': chat.created_at.isoformat() if chat.created_at else None,
-        'stock_info': chat.stock_info
+        'message_count': len(chat.messages),
+        'has_report': chat.generated_report is not None
     } for chat in chats])
 
+
 @api_bp.route('/chats/<chat_id>', methods=['GET'])
+@login_required
 def get_chat(chat_id):
-    if not chat_id or len(chat_id) > 100:
-        return jsonify({'error': 'Invalid chat ID'}), 400
-    
+    """Get a specific chat"""
     try:
         uuid.UUID(chat_id)
     except ValueError:
         return jsonify({'error': 'Invalid chat ID format'}), 400
-    
+
     chat = Chat.query.get(chat_id)
+
     if not chat:
         return jsonify({'error': 'Chat not found'}), 404
-    
-    response_data = chat.to_dict()
-    if response_data.get('pdf_text'):
-        response_data['pdf_text_length'] = len(response_data['pdf_text'])
-        response_data['pdf_text_preview'] = response_data['pdf_text'][:500]
-        del response_data['pdf_text']
-    
-    ticker_pdf = chat.ticker_pdf
-    if ticker_pdf and ticker_pdf.pdf_filename:
-        response_data['pdf_filename'] = ticker_pdf.pdf_filename
-    elif chat.filing_date:
-        filename = f"{chat.ticker}_{chat.filing_date}_10Q.pdf"
-        filepath = os.path.join(Config.DOWNLOADS_DIR, filename)
-        if os.path.exists(filepath):
-            response_data['pdf_filename'] = filename
-    
-    return jsonify(response_data)
+
+    if chat.user_id != current_user.id and not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+
+    return jsonify(chat.to_dict())
+
 
 @api_bp.route('/chats/<chat_id>/ask', methods=['POST'])
+@login_required
 def ask_question(chat_id):
-    if not chat_id or len(chat_id) > 100:
-        return jsonify({'error': 'Invalid chat ID'}), 400
-    
+    """Ask a question using RAG"""
     try:
         uuid.UUID(chat_id)
     except ValueError:
         return jsonify({'error': 'Invalid chat ID format'}), 400
-    
+
     chat = Chat.query.get(chat_id)
+
     if not chat:
         return jsonify({'error': 'Chat not found'}), 404
-    
+
+    if chat.user_id != current_user.id:
+        return jsonify({'error': 'Access denied'}), 403
+
+    if not chat.filing or not chat.filing.is_embedded:
+        return jsonify({'error': 'Filing not yet processed. Please wait for embedding to complete.'}), 400
+
     data = request.get_json()
     if not data:
         return jsonify({'error': 'Invalid request'}), 400
-    
+
     question = sanitize_string(data.get('question', ''), max_length=5000)
-    
+
     if not question:
         return jsonify({'error': 'Question is required'}), 400
-    
-    if not chat.pdf_text:
-        return jsonify({'error': 'PDF text not available for this ticker.'}), 400
-    
-    if not llm_service.client:
-        return jsonify({'error': 'OpenAI API key not configured'}), 500
-    
-    print(f"Question: {question}")
-    print(f"Previous Q&A pairs: {len(chat.messages)}")
-    
-    previous_qa = [{"question": msg.question, "answer": msg.answer} for msg in chat.messages]
-    cached_pdf_message = chat.get_pdf_message(is_continuation=len(chat.messages) > 0)
-    answer = llm_service.ask_question(chat.pdf_text, question, previous_qa, cached_pdf_message=cached_pdf_message)
-    
+
+    namespace = chat.filing.get_namespace()
+    retrieved_chunks = vector_service.query(question, namespace, top_k=Config.RETRIEVAL_TOP_K)
+
+    if not retrieved_chunks:
+        return jsonify({'error': 'No relevant context found'}), 400
+
+    conversation_history = chat.get_conversation_history(limit=5)
+
+    filing_metadata = chat.filing.to_dict()
+
+    answer = llm_service.ask_question_rag(
+        query=question,
+        retrieved_chunks=retrieved_chunks,
+        conversation_history=conversation_history,
+        filing_metadata=filing_metadata
+    )
+
     if not answer:
-        return jsonify({'error': 'Failed to get answer from LLM'}), 500
-    
+        return jsonify({'error': 'Failed to generate answer'}), 500
+
     message = chat.add_message(question, answer)
+
     return jsonify(message.to_dict())
 
+
 @api_bp.route('/chats/<chat_id>/generate-report', methods=['POST'])
+@login_required
 def generate_report(chat_id):
-    if not chat_id or len(chat_id) > 100:
-        return jsonify({'error': 'Invalid chat ID'}), 400
-    
+    """Generate a comprehensive report using RAG"""
     try:
         uuid.UUID(chat_id)
     except ValueError:
         return jsonify({'error': 'Invalid chat ID format'}), 400
-    
+
     chat = Chat.query.get(chat_id)
+
     if not chat:
         return jsonify({'error': 'Chat not found'}), 404
-    
-    if not chat.pdf_text:
-        return jsonify({'error': 'PDF text not available for this ticker.'}), 400
-    
-    if not llm_service.client:
-        return jsonify({'error': 'OpenAI API key not configured'}), 500
-    
-    print(f"Generating report for chat {chat_id}, ticker: {chat.ticker}")
-    print(f"PDF text length: {len(chat.pdf_text)} characters")
-    
-    report = llm_service.generate_report(chat.pdf_text, chat.ticker, chat.stock_info)
-    
+
+    if chat.user_id != current_user.id:
+        return jsonify({'error': 'Access denied'}), 403
+
+    if not chat.filing or not chat.filing.is_embedded:
+        return jsonify({'error': 'Filing not yet processed'}), 400
+
+    namespace = chat.filing.get_namespace()
+
+    report_queries = [
+        ("Financial Performance", "revenue earnings profit margin EPS financial performance"),
+        ("Balance Sheet", "assets liabilities equity debt balance sheet"),
+        ("Cash Flow", "cash flow operating investing financing free cash flow"),
+        ("Risk Factors", "risk factors challenges threats"),
+        ("Management Discussion", "management discussion outlook guidance future"),
+    ]
+
+    section_contexts = {}
+    for section_name, query in report_queries:
+        chunks = vector_service.query(query, namespace, top_k=3)
+        section_contexts[section_name] = chunks
+
+    filing_metadata = chat.filing.to_dict()
+
+    report = llm_service.generate_report_rag(
+        filing_metadata=filing_metadata,
+        section_contexts=section_contexts,
+        stock_info=chat.stock_info
+    )
+
     if not report:
-        return jsonify({'error': 'Failed to generate report from LLM'}), 500
-    
+        return jsonify({'error': 'Failed to generate report'}), 500
+
     chat.set_report(report)
     message = chat.add_message("Generate comprehensive report", report)
-    
+
     return jsonify({
         'message': message.to_dict(),
         'report': report,
         'report_generated_at': chat.report_generated_at.isoformat() if chat.report_generated_at else None
     })
 
+
 @api_bp.route('/chats/<chat_id>/report', methods=['GET'])
+@login_required
 def get_report(chat_id):
-    if not chat_id or len(chat_id) > 100:
-        return jsonify({'error': 'Invalid chat ID'}), 400
-    
+    """Get the generated report for a chat"""
     try:
         uuid.UUID(chat_id)
     except ValueError:
         return jsonify({'error': 'Invalid chat ID format'}), 400
-    
+
     chat = Chat.query.get(chat_id)
+
     if not chat:
         return jsonify({'error': 'Chat not found'}), 404
-    
+
+    if chat.user_id != current_user.id and not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+
     if not chat.generated_report:
         return jsonify({'error': 'No report generated for this chat'}), 404
-    
+
     return jsonify({
         'report': chat.generated_report,
         'report_generated_at': chat.report_generated_at.isoformat() if chat.report_generated_at else None,
         'ticker': chat.ticker,
-        'stock_info': chat.stock_info
+        'filing': chat.filing.to_dict() if chat.filing else None
     })
 
-@api_bp.route('/validate-dashboard-pin', methods=['POST'])
-def validate_dashboard_pin():
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'Invalid request'}), 400
-    
-    pin = sanitize_string(data.get('pin', ''), max_length=20)
-    
-    if not pin:
-        return jsonify({'error': 'PIN is required'}), 400
-    
-    if pin == Config.DASHBOARD_PIN:
-        session['dashboard_authenticated'] = True
-        session.permanent = True
-        return jsonify({'success': True, 'message': 'PIN validated successfully'})
-    else:
-        return jsonify({'error': 'Invalid PIN'}), 401
 
 @api_bp.route('/chats/<chat_id>', methods=['DELETE'])
+@login_required
 def delete_chat(chat_id):
-    if not chat_id or len(chat_id) > 100:
-        return jsonify({'error': 'Invalid chat ID'}), 400
-    
+    """Delete a chat"""
     try:
         uuid.UUID(chat_id)
     except ValueError:
         return jsonify({'error': 'Invalid chat ID format'}), 400
-    
+
     chat = Chat.query.get(chat_id)
+
     if not chat:
         return jsonify({'error': 'Chat not found'}), 404
-    
+
+    if chat.user_id != current_user.id and not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+
     db.session.delete(chat)
     db.session.commit()
-    
+
     return jsonify({'success': True, 'message': 'Chat deleted successfully'})
 
-@api_bp.route('/chats', methods=['DELETE'])
-def delete_all_chats():
-    try:
-        count = Chat.query.count()
-        Chat.query.delete()
-        db.session.commit()
-        return jsonify({'success': True, 'message': f'All {count} chats deleted successfully'})
-    except Exception as e:
-        db.session.rollback()
-        print(f"Error deleting all chats: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': 'Failed to delete all chats'}), 500
+
+# Waitlist endpoint
 
 @api_bp.route('/waitlist', methods=['POST'])
 def add_to_waitlist():
+    """Add email to waitlist"""
     data = request.get_json()
     if not data:
         return jsonify({'error': 'Invalid request'}), 400
-    
+
     email = sanitize_string(data.get('email', ''), max_length=255)
-    
+
     if not email:
         return jsonify({'error': 'Email is required'}), 400
-    
+
     email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     if not re.match(email_pattern, email):
         return jsonify({'error': 'Invalid email format'}), 400
-    
+
     try:
         existing = WaitlistEmail.query.filter_by(email=email).first()
         if existing:
             return jsonify({'success': True, 'message': 'Email already in waitlist'}), 200
-        
+
         waitlist_email = WaitlistEmail(email=email)
         db.session.add(waitlist_email)
         db.session.commit()
-        
+
         return jsonify({'success': True, 'message': 'Email added to waitlist successfully'}), 201
+
     except Exception as e:
         db.session.rollback()
         print(f"Error adding email to waitlist: {e}")
-        import traceback
-        traceback.print_exc()
         return jsonify({'error': 'Failed to add email to waitlist'}), 500
+
+
+# Stock info endpoint
+
+@api_bp.route('/stock/<ticker>', methods=['GET'])
+@login_required
+def get_stock_info(ticker):
+    """Get stock information for a ticker"""
+    ticker = ticker.strip().upper()
+
+    if not validate_ticker(ticker):
+        return jsonify({'error': 'Invalid ticker symbol'}), 400
+
+    stock_info = stock_service.get_stock_info(ticker)
+
+    if not stock_info:
+        return jsonify({'error': 'Failed to fetch stock information'}), 404
+
+    return jsonify(stock_info)

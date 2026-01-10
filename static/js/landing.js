@@ -1,35 +1,13 @@
-let demoChatId = null;
-let isProcessingDemo = false;
-let chatCreationPromise = null;
 let statAnimationStarted = false;
 
 document.addEventListener("DOMContentLoaded", function () {
   initializeNavbar();
-  initializeDemo();
   initializeScrollAnimations();
   initializeStatAnimations();
   initializeFeatureCards();
   addEasterEggs();
   initializeWaitlistModal();
   initializeHeroEmailForm();
-
-  const demoInput = document.getElementById("demoChatInput");
-  if (demoInput) {
-    demoInput.addEventListener("keypress", function (e) {
-      if (e.key === "Enter") {
-        sendDemoMessage();
-      }
-    });
-
-    demoInput.addEventListener("focus", function () {
-      this.placeholder = "Go ahead, ask me anything...";
-    });
-
-    demoInput.addEventListener("blur", function () {
-      this.placeholder =
-        "Ask a question about Tesla's financials... (e.g., 'Calculate the company's free cash flow yield')";
-    });
-  }
 });
 
 function initializeNavbar() {
@@ -44,256 +22,6 @@ function initializeNavbar() {
       navbar.classList.remove("scrolled");
     }
   });
-}
-
-function initializeDemo() {
-  const input = document.getElementById("demoChatInput");
-  const sendButton = document.getElementById("demoSendButton");
-
-  if (input) {
-    input.disabled = true;
-    input.placeholder = "Readying demo...";
-  }
-  if (sendButton) {
-    sendButton.disabled = true;
-  }
-
-  chatCreationPromise = createDemoChat();
-}
-
-async function createDemoChat() {
-  try {
-    const response = await fetch("/api/create-chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ticker: "TSLA", is_demo: true }),
-    });
-
-    const data = await response.json();
-    if (response.ok) {
-      demoChatId = data.chat_id;
-      showDemoReady();
-      return demoChatId;
-    } else {
-      showDemoError();
-      return null;
-    }
-  } catch (error) {
-    showDemoError();
-    return null;
-  }
-}
-
-function showDemoReady() {
-  const welcomeMessage = document.getElementById("demoWelcomeMessage");
-  const loadingBadge = document.querySelector(
-    "#demoChatMessages .rounded-full"
-  );
-  const input = document.getElementById("demoChatInput");
-  const sendButton = document.getElementById("demoSendButton");
-
-  if (welcomeMessage && loadingBadge) {
-    loadingBadge.style.display = "none";
-    welcomeMessage.style.display = "block";
-    welcomeMessage.style.animation = "fadeIn 0.3s ease-in";
-  }
-
-  if (input) {
-    input.disabled = false;
-    input.placeholder =
-      "Ask a question about Tesla's financials... (e.g., 'Calculate the company's free cash flow yield')";
-  }
-  if (sendButton) {
-    sendButton.disabled = false;
-  }
-}
-
-function showDemoError() {
-  const welcomeMessage = document.getElementById("demoWelcomeMessage");
-  const loadingBadge = document.querySelector(
-    "#demoChatMessages .rounded-full"
-  );
-  const container = document.querySelector("#demoChatMessages > div");
-  const input = document.getElementById("demoChatInput");
-  const sendButton = document.getElementById("demoSendButton");
-
-  if (container && loadingBadge) {
-    loadingBadge.style.display = "none";
-    if (welcomeMessage) {
-      welcomeMessage.style.display = "none";
-    }
-    container.innerHTML = `
-            <p class="text-sm text-red-600 leading-relaxed">
-                Unable to initialize demo. Please refresh the page.
-            </p>
-        `;
-  }
-
-  if (input) {
-    input.disabled = true;
-    input.placeholder = "Demo unavailable - please refresh";
-  }
-  if (sendButton) {
-    sendButton.disabled = true;
-  }
-}
-
-let pendingQuestion = null;
-let pendingResponse = null;
-let emailSubmitted = localStorage.getItem("demo_email_submitted") === "true";
-
-async function sendDemoMessage() {
-  if (isProcessingDemo) {
-    return;
-  }
-
-  const input = document.getElementById("demoChatInput");
-  const question = input.value.trim();
-
-  if (!question) {
-    return;
-  }
-
-  const isFirstQuery = !localStorage.getItem("demo_query_sent");
-
-  if (isFirstQuery && !emailSubmitted) {
-    pendingQuestion = question;
-    showWaitlistModal(true);
-    return;
-  }
-
-  if (isFirstQuery) {
-    localStorage.setItem("demo_query_sent", "true");
-  }
-
-  if (!demoChatId && chatCreationPromise) {
-    await chatCreationPromise;
-  }
-
-  if (!demoChatId) {
-    demoChatId = await createDemoChat();
-    if (!demoChatId) {
-      const messagesDiv = document.getElementById("demoChatMessages");
-      if (messagesDiv) {
-        messagesDiv.innerHTML += `
-                    <div class="bg-white border border-red-200 rounded-xl p-4">
-                        <p class="text-sm text-red-600">Unable to initialize demo. Please refresh the page.</p>
-                    </div>
-                `;
-      }
-      return;
-    }
-  }
-
-  input.value = "";
-  isProcessingDemo = true;
-  updateDemoSendButton(true);
-
-  const messagesDiv = document.getElementById("demoChatMessages");
-  const container = document.getElementById("demoChatContainer");
-
-  messagesDiv.innerHTML += `
-        <div class="bg-white rounded-xl p-4 border border-gray-200">
-            <div class="text-sm font-semibold text-gray-900 mb-2 question-highlight">Q: ${question}</div>
-            <div class="text-gray-700 leading-relaxed markdown-content">
-                <span class="loading-dots">Thinking</span>
-            </div>
-        </div>
-    `;
-
-  container.scrollTop = container.scrollHeight;
-
-  try {
-    const response = await fetch(`/api/chats/${demoChatId}/ask`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: question }),
-    });
-
-    const data = await response.json();
-    const lastMsg = messagesDiv.lastElementChild;
-
-    if (response.ok && data.answer) {
-      lastMsg.innerHTML = `
-                <div class="text-sm font-semibold text-gray-900 mb-2 question-highlight">Q: ${
-                  data.question
-                }</div>
-                <div class="text-gray-700 leading-relaxed markdown-content">${renderMarkdown(
-                  data.answer
-                )}</div>
-            `;
-      const markdownContent = lastMsg.querySelector(".markdown-content");
-      if (markdownContent) {
-        renderMath(markdownContent);
-      }
-    } else {
-      lastMsg.innerHTML = `
-                <div class="text-sm font-semibold text-gray-900 mb-2 question-highlight">Q: ${question}</div>
-                <div class="text-red-600">Error: ${
-                  data.error || "Unable to get answer"
-                }</div>
-            `;
-    }
-
-    container.scrollTop = container.scrollHeight;
-  } catch (error) {
-    const lastMsg = messagesDiv.lastElementChild;
-    if (lastMsg) {
-      lastMsg.innerHTML = `
-                <div class="text-sm font-semibold text-gray-900 mb-2 question-highlight">Q: ${question}</div>
-                <div class="text-red-600">Network error. Please try again.</div>
-            `;
-    }
-  } finally {
-    isProcessingDemo = false;
-    updateDemoSendButton(false);
-  }
-}
-
-async function processPendingQuestion() {
-  if (pendingQuestion) {
-    const question = pendingQuestion;
-    pendingQuestion = null;
-    const input = document.getElementById("demoChatInput");
-    if (input) {
-      input.value = question;
-    }
-    await sendDemoMessage();
-  }
-}
-
-function updateDemoSendButton(isProcessing) {
-  const sendButton = document.getElementById("demoSendButton");
-  if (!sendButton) return;
-
-  if (isProcessing) {
-    sendButton.innerHTML = `
-            <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-            </svg>
-        `;
-    sendButton.disabled = true;
-  } else {
-    sendButton.innerHTML = `
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
-            </svg>
-        `;
-    sendButton.disabled = false;
-  }
-}
-
-function scrollToDemo() {
-  const demoSection = document.getElementById("demo");
-  if (demoSection) {
-    const offset = 80;
-    const elementPosition = demoSection.getBoundingClientRect().top;
-    const offsetPosition = elementPosition + window.pageYOffset - offset;
-    window.scrollTo({
-      top: offsetPosition,
-      behavior: "smooth",
-    });
-  }
 }
 
 function scrollToSection(sectionId) {
@@ -433,8 +161,6 @@ function switchFeatureTab(tabName) {
   }
 }
 
-let isForcedModal = false;
-
 function initializeWaitlistModal() {
   const modal = document.getElementById("waitlistModal");
   const closeBtn = document.getElementById("closeWaitlistModal");
@@ -446,9 +172,6 @@ function initializeWaitlistModal() {
   if (!modal || !closeBtn || !form) return;
 
   function hideModal() {
-    if (isForcedModal) {
-      return;
-    }
     modal.classList.add("hidden");
     document.body.style.overflow = "";
   }
@@ -461,19 +184,11 @@ function initializeWaitlistModal() {
     messageDiv.classList.remove("hidden");
   }
 
-  closeBtn.addEventListener("click", function () {
-    if (!isForcedModal) {
-      hideModal();
-    }
-  });
+  closeBtn.addEventListener("click", hideModal);
 
   const backdrop = modal.querySelector(".backdrop-blur-sm");
   if (backdrop) {
-    backdrop.addEventListener("click", function () {
-      if (!isForcedModal) {
-        hideModal();
-      }
-    });
+    backdrop.addEventListener("click", hideModal);
   }
 
   form.addEventListener("submit", async function (e) {
@@ -498,24 +213,13 @@ function initializeWaitlistModal() {
       const data = await response.json();
 
       if (response.ok) {
-        emailSubmitted = true;
-        localStorage.setItem("demo_email_submitted", "true");
         showMessage("Thanks! We'll be in touch soon.", false);
         emailInput.value = "";
-        isForcedModal = false;
-        closeBtn.style.display = "block";
-        const modalTitle = modal.querySelector("h2");
-        const modalDesc = modal.querySelector("p");
-        if (modalTitle) modalTitle.textContent = "Join the Waitlist";
-        if (modalDesc)
-          modalDesc.textContent =
-            "Get early access when we launch. We'll keep you updated!";
 
         setTimeout(() => {
           hideModal();
           setTimeout(() => {
             messageDiv.classList.add("hidden");
-            processPendingQuestion();
           }, 300);
         }, 2000);
       } else {
@@ -533,28 +237,9 @@ function initializeWaitlistModal() {
   });
 }
 
-function showWaitlistModal(forced = false) {
+function showWaitlistModal() {
   const modal = document.getElementById("waitlistModal");
   if (modal) {
-    isForcedModal = forced;
-    const closeBtn = document.getElementById("closeWaitlistModal");
-    const modalTitle = modal.querySelector("h2");
-    const modalDesc = modal.querySelector("p");
-
-    if (forced) {
-      if (closeBtn) closeBtn.style.display = "none";
-      if (modalTitle) modalTitle.textContent = "Email Required";
-      if (modalDesc)
-        modalDesc.textContent =
-          "Sorry, we have to do this, cuz if ppl cant enter their email, means theyre not interested";
-    } else {
-      if (closeBtn) closeBtn.style.display = "block";
-      if (modalTitle) modalTitle.textContent = "Join the Waitlist";
-      if (modalDesc)
-        modalDesc.textContent =
-          "Get early access when we launch. We'll keep you updated!";
-    }
-
     modal.classList.remove("hidden");
     document.body.style.overflow = "hidden";
     const emailInput = document.getElementById("waitlistEmail");
@@ -592,8 +277,6 @@ function initializeHeroEmailForm() {
       const data = await response.json();
 
       if (response.ok) {
-        emailSubmitted = true;
-        localStorage.setItem("demo_email_submitted", "true");
         emailInput.value = "";
         submitBtn.textContent = "Joined!";
         submitBtn.classList.add("bg-green-600");
@@ -628,7 +311,7 @@ function addEasterEggs() {
         setTimeout(() => {
           this.style.animation = "";
           alert(
-            "🎉 You found the secret! We're actually backed by coffee. Lots of coffee."
+            "You found the secret! We're actually backed by coffee. Lots of coffee."
           );
         }, 1000);
         clickCount = 0;
@@ -663,9 +346,25 @@ function addEasterEggs() {
       const helpText = document.createElement("div");
       helpText.className =
         "fixed bottom-4 right-4 bg-black text-white p-4 rounded-xl shadow-xl z-50 max-w-sm";
-      helpText.innerHTML =
-        '<p class="text-sm font-semibold mb-2">💡 Pro Tips:</p><ul class="text-xs space-y-1 list-disc list-inside"><li>Click the logo 5 times</li><li>Try the demo - it\'s actually functional</li><li>We don\'t track you (seriously)</li></ul>';
+
+      const title = document.createElement("p");
+      title.className = "text-sm font-semibold mb-2";
+      title.textContent = "Pro Tips:";
+
+      const list = document.createElement("ul");
+      list.className = "text-xs space-y-1 list-disc list-inside";
+
+      const tips = ["Click the logo 5 times", "We don't track you (seriously)"];
+      tips.forEach(tip => {
+        const li = document.createElement("li");
+        li.textContent = tip;
+        list.appendChild(li);
+      });
+
+      helpText.appendChild(title);
+      helpText.appendChild(list);
       document.body.appendChild(helpText);
+
       setTimeout(() => {
         helpText.style.opacity = "0";
         helpText.style.transition = "opacity 0.3s";

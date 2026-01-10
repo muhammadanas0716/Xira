@@ -77,8 +77,8 @@
                 <div class="flex items-center gap-8">
                     <a href="#features" onclick="event.preventDefault(); scrollToSection('features');"
                         class="hidden md:block text-gray-700 hover:text-gray-900 font-medium transition-colors cursor-pointer">Features</a>
-                    <a href="#demo" onclick="event.preventDefault(); scrollToDemo();"
-                        class="hidden md:block text-gray-700 hover:text-gray-900 font-medium transition-colors cursor-pointer">Demo</a>
+                    <a href="{{ url_for('auth.login') }}"
+                        class="hidden md:block text-gray-700 hover:text-gray-900 font-medium transition-colors cursor-pointer">Sign In</a>
                 </div>
             </div>
         </div>
@@ -110,12 +110,6 @@
                         Join Waitlist
                     </button>
                 </form>
-            </div>
-            <div class="flex items-center justify-center gap-4 flex-wrap">
-                <button onclick="scrollToDemo()"
-                    class="bg-black text-white font-semibold py-4 px-10 rounded-xl transition-transform shadow-lg text-lg hover:-translate-y-1">
-                    We have a live demo
-                </button>
             </div>
         </div>
     </section>
@@ -169,83 +163,23 @@
         </div>
     </section>
 
-    <section id="demo" class="py-24 px-6 bg-white relative z-10">
-        <div class="max-w-6xl mx-auto">
-            <div class="text-center mb-12 fade-in-up">
-                <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Try It Yourself</h2>
-                <p class="text-lg text-gray-600 mb-2">Chat with TSLA's latest 10-Q filing. Just email required.</p>
-                <p class="text-sm text-gray-500 mb-2">Currently supporting quarterly reports (10-Q). Working on yearly reports (10-K) and other filings (8-K, DEF 14A, etc.).</p>
-            </div>
-
-            <div class="max-w-6xl mx-auto mb-6 fade-in-up">
-                <div class="bg-red-50 border-2 border-red-200 rounded-xl p-4 text-center">
-                    <p class="text-sm font-medium text-red-800">
-                        ⚠️ <span class="font-semibold">Beta Notice:</span> Demo could be a bit slower since we're still in beta and figuring out how to speed things up. Please bear with us!
-                    </p>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-2xl shadow-xl overflow-hidden fade-in-up">
-                <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                            <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                            <span class="text-sm font-medium text-gray-700 ml-4">TSLA - Tesla Inc. Latest 10-Q</span>
-                        </div>
-                        <span class="text-xs text-gray-500">Live Demo</span>
-                    </div>
-                </div>
-
-                <div id="demoChatContainer" class="h-96 overflow-y-auto p-6 scrollbar-hide bg-white">
-                    <div id="demoChatMessages" class="space-y-4">
-                        <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                            <div class="flex items-center gap-3 mb-3">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 animate-pulse">
-                                    Readying Demo...
-                                </span>
-                            </div>
-                            <p class="text-sm text-gray-700 leading-relaxed" id="demoWelcomeMessage" style="display: none;">
-                                <span class="font-semibold">👋 Hey there!</span> I'm ready to answer questions about
-                                Tesla's financial data.
-                                Try asking something like "Calculate the company's free cash flow yield and compare it to the previous quarter" or "What are the key drivers behind the change in operating margin between this quarter and the same quarter last year?"
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="p-6 border-t border-gray-200 bg-white">
-                    <div class="relative">
-                        <input type="text" id="demoChatInput"
-                            placeholder="Ask a question about Tesla's financials... (e.g., 'Calculate the company's free cash flow yield')"
-                            class="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent input-focus shadow-sm">
-                        <button id="demoSendButton" onclick="sendDemoMessage()"
-                            class="absolute right-3 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black hover:bg-gray-800 text-white rounded-xl flex items-center justify-center transition-all btn-primary shadow-md">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <section class="py-24 px-6 bg-white relative z-10">
         <div class="max-w-4xl mx-auto text-center">
             <div class="bg-gray-50 rounded-2xl p-12 border border-gray-200 fade-in-up">
                 <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Ready to Stop Reading PDFs?</h2>
                 <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-                    Join the smart investors who ask questions instead of scrolling through endless pages. 
+                    Join the smart investors who ask questions instead of scrolling through endless pages.
                     (Your eyes will thank you. Seriously, they're probably tired of squinting at tiny financial tables.)
                 </p>
                 <div class="flex items-center justify-center gap-4 flex-wrap">
-                    <button onclick="scrollToDemo()"
+                    <button onclick="showWaitlistModal()"
                         class="bg-black hover:bg-gray-800 text-white font-semibold py-4 px-10 rounded-xl transition-all btn-primary shadow-lg text-lg">
-                        Try It Now
+                        Join Waitlist
                     </button>
+                    <a href="{{ url_for('auth.login') }}"
+                        class="bg-white hover:bg-gray-50 text-gray-900 font-semibold py-4 px-10 rounded-xl transition-all shadow-md text-lg border border-gray-200">
+                        Sign In
+                    </a>
                 </div>
             </div>
         </div>
@@ -262,8 +196,8 @@
                 <div class="flex items-center gap-8 flex-wrap justify-center">
                     <a href="#features" onclick="event.preventDefault(); scrollToSection('features');"
                         class="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium cursor-pointer">Features</a>
-                    <a href="#demo" onclick="event.preventDefault(); scrollToDemo();"
-                        class="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium cursor-pointer">Demo</a>
+                    <a href="{{ url_for('auth.login') }}"
+                        class="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium">Sign In</a>
                     <a href="{{ url_for('main.privacy') }}"
                         class="text-sm text-gray-600 hover:text-gray-900 transition-colors font-medium">Privacy</a>
                     <a href="{{ url_for('main.terms') }}"

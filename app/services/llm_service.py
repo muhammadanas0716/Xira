@@ -1,328 +1,278 @@
-from typing import Optional, Generator
+from typing import Optional, List, Dict, Generator
 from openai import OpenAI
 from app.utils.config import Config
+from app.services.vector_service import QueryResult
+
 
 class LLMService:
-    _system_prompt_cache = None
-    
     def __init__(self):
         self.client = None
         if Config.OPENAI_API_KEY:
             self.client = OpenAI(api_key=Config.OPENAI_API_KEY)
-    
-    def get_system_prompt(self) -> str:
-        if LLMService._system_prompt_cache is None:
-            LLMService._system_prompt_cache = """You are a financial analyst assistant. You analyze SEC filings (10-Q and 10-K reports) and answer questions clearly and concisely.
+
+    def is_available(self) -> bool:
+        return self.client is not None
+
+    def _get_rag_system_prompt(self) -> str:
+        return """You are a financial analyst assistant specializing in SEC filings analysis. You answer questions based on the provided context from SEC filings.
 
 RESPONSE STYLE:
-- Keep answers short and to the point unless the user asks for detailed analysis
-- Use simple, clear language that's easy to understand
-- Avoid unnecessary explanations or filler words
-- Only expand on details if specifically requested
+- Keep answers concise and to the point unless detailed analysis is requested
+- Use clear, simple language
+- Cite specific numbers when available
+- If information isn't in the provided context, say so clearly
 
 ACCURACY:
-- Search the entire document thoroughly (all sections, tables, footnotes)
-- Financial data may appear in multiple places - check everywhere
-- If information isn't found, say so clearly
-- Always cite specific numbers when available
-- Don't hesitate to use values present in the file to perform calculations as needed (e.g., if total revenue is given for a quarter, calculate monthly averages; convert quarterly to annualized, derive per-share metrics from totals)
+- Only use information from the provided context
+- Don't make up or infer data not present in the context
+- If the context doesn't contain enough information, acknowledge it
 
 FORMATTING:
-- Use headings (##) wisely to organize longer answers with multiple topics - don't overuse them for short responses
-- Use tables when they add clarity: comparisons, financial metrics across periods, ratios, structured data with multiple values
-- Use bullet points (-) for simple lists or when tables aren't needed
-- Use **bold** for key numbers and metrics
-- Use <span style="color: green">green text</span> sparingly to highlight positive trends, improvements, or strengths
-- Use <span style="color: red">red text</span> sparingly to highlight concerns, declines, or weaknesses
-- Only use colors for emphasis on 1-3 key points per response - don't overuse colors
-- Choose the format that best presents the information - tables for comparisons, headings for organization, bullets for lists
-- Keep paragraphs short and readable"""
-        return LLMService._system_prompt_cache
-    
-    def ingest_pdf(self, pdf_text: str) -> Optional[dict]:
-        if not self.client:
-            return None
-        
-        print(f"Preparing PDF for ingestion, length: {len(pdf_text)} characters")
-        return {"pdf_text": pdf_text, "ingested": True}
-    
-    def ask_question(self, pdf_text: str, question: str, previous_qa: list = None, cached_pdf_message: str = None) -> Optional[str]:
-        if not self.client:
-            return None
-        
-        if not pdf_text and not cached_pdf_message:
-            return None
-        
-        print(f"Asking question with PDF text ({len(pdf_text) if pdf_text else 0} chars) and {len(previous_qa) if previous_qa else 0} previous Q&A pairs")
-        
-        try:
-            system_prompt = self.get_system_prompt()
-            
-            messages = [{"role": "system", "content": system_prompt}]
-            
-            if cached_pdf_message:
-                pdf_message = cached_pdf_message
-            elif previous_qa and len(previous_qa) > 0:
-                pdf_message = f"""SEC filing document (same as previous conversation):
-
-{pdf_text}"""
-            else:
-                pdf_message = f"""SEC filing document:
-
-{pdf_text}"""
-            
-            messages.append({"role": "user", "content": pdf_message})
-            
-            if previous_qa:
-                for qa in previous_qa[-5:]:
-                    messages.append({"role": "user", "content": f"Question: {qa['question']}"})
-                    messages.append({"role": "assistant", "content": qa['answer']})
-            
-            messages.append({"role": "user", "content": f"""Question: {question}
-
-Answer concisely and clearly. Search the entire document (financial statements, MD&A, footnotes, tables).
-
-When comparing to "last quarter" or "previous quarter", identify the current reporting period from the document and compare it to the immediately preceding quarter shown in the financial statements.
-
-Format:
-- Use headings (##) to organize longer answers with multiple topics
-- Use tables when helpful: comparisons, financial metrics across periods, ratios, structured data
-- Use bullet points (-) for simple lists or when tables aren't needed
+- Use headings (##) for longer answers with multiple topics
+- Use tables for comparisons and financial metrics
+- Use bullet points for lists
 - Use **bold** for key numbers
-- Use <span style="color: green">green text</span> sparingly (1-3 times max) to highlight positive trends or strengths
-- Use <span style="color: red">red text</span> sparingly (1-3 times max) to highlight concerns or weaknesses
-- Choose the best format for each piece of information
-- Keep it short unless detailed analysis is needed
+- Use <span style="color: green">green</span> sparingly for positive trends
+- Use <span style="color: red">red</span> sparingly for concerns"""
 
-If the answer isn't in the document, say so directly."""})
-            
-            print(f"Calling OpenAI API with {len(messages)} messages...")
+    def _format_chunks_as_context(self, chunks: List[QueryResult]) -> str:
+        """Format retrieved chunks as context for the LLM"""
+        if not chunks:
+            return "No relevant context found."
+
+        context_parts = []
+        for i, chunk in enumerate(chunks, 1):
+            section = chunk.metadata.get('section', 'Unknown Section')
+            context_parts.append(f"[Source {i} - {section}]\n{chunk.text}")
+
+        return "\n\n---\n\n".join(context_parts)
+
+    def _format_conversation_history(self, history: List[Dict], max_pairs: int = 5) -> List[Dict]:
+        """Format conversation history for the LLM"""
+        messages = []
+        recent_history = history[-max_pairs:] if len(history) > max_pairs else history
+
+        for qa in recent_history:
+            messages.append({"role": "user", "content": qa['question']})
+            messages.append({"role": "assistant", "content": qa['answer']})
+
+        return messages
+
+    def ask_question_rag(
+        self,
+        query: str,
+        retrieved_chunks: List[QueryResult],
+        conversation_history: List[Dict] = None,
+        filing_metadata: Dict = None
+    ) -> Optional[str]:
+        """Answer a question using RAG context"""
+        if not self.client:
+            return None
+
+        context = self._format_chunks_as_context(retrieved_chunks)
+
+        filing_info = ""
+        if filing_metadata:
+            filing_info = f"""
+Filing Information:
+- Ticker: {filing_metadata.get('ticker', 'N/A')}
+- Form: {filing_metadata.get('form_type', '10-Q')}
+- Period: {filing_metadata.get('fiscal_period', 'N/A')}
+- Filing Date: {filing_metadata.get('filing_date', 'N/A')}
+"""
+
+        messages = [{"role": "system", "content": self._get_rag_system_prompt()}]
+
+        messages.append({
+            "role": "user",
+            "content": f"""Context from SEC Filing:
+{filing_info}
+{context}"""
+        })
+
+        if conversation_history:
+            messages.extend(self._format_conversation_history(conversation_history))
+
+        messages.append({
+            "role": "user",
+            "content": f"""Question: {query}
+
+Answer based on the provided context. If the information isn't available in the context, say so."""
+        })
+
+        try:
+            print(f"RAG query with {len(retrieved_chunks)} chunks, {len(messages)} messages")
+
             response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
                 max_tokens=4000
             )
-            
+
             answer = response.choices[0].message.content
-            print(f"LLM response received, length: {len(answer)} characters")
-            print(f"Answer preview: {answer[:200]}")
-            
+            print(f"RAG response: {len(answer)} characters")
             return answer
+
         except Exception as e:
-            print(f"Error calling OpenAI: {e}")
+            print(f"Error in RAG query: {e}")
             import traceback
             traceback.print_exc()
             return None
-    
-    def ask_question_stream(self, pdf_text: str, question: str, previous_qa: list = None, cached_pdf_message: str = None) -> Generator[str, None, None]:
+
+    def ask_question_rag_stream(
+        self,
+        query: str,
+        retrieved_chunks: List[QueryResult],
+        conversation_history: List[Dict] = None,
+        filing_metadata: Dict = None
+    ) -> Generator[str, None, None]:
+        """Stream answer using RAG context"""
         if not self.client:
-            yield "data: " + '{"error": "OpenAI client not initialized"}\n\n'
+            yield 'data: {"error": "OpenAI client not initialized"}\n\n'
             return
-        
-        if not pdf_text and not cached_pdf_message:
-            yield "data: " + '{"error": "PDF text not available"}\n\n'
-            return
-        
-        print(f"Streaming question with PDF text ({len(pdf_text) if pdf_text else 0} chars) and {len(previous_qa) if previous_qa else 0} previous Q&A pairs")
-        
+
+        context = self._format_chunks_as_context(retrieved_chunks)
+
+        filing_info = ""
+        if filing_metadata:
+            filing_info = f"""
+Filing Information:
+- Ticker: {filing_metadata.get('ticker', 'N/A')}
+- Form: {filing_metadata.get('form_type', '10-Q')}
+- Period: {filing_metadata.get('fiscal_period', 'N/A')}
+"""
+
+        messages = [{"role": "system", "content": self._get_rag_system_prompt()}]
+
+        messages.append({
+            "role": "user",
+            "content": f"""Context from SEC Filing:
+{filing_info}
+{context}"""
+        })
+
+        if conversation_history:
+            messages.extend(self._format_conversation_history(conversation_history))
+
+        messages.append({
+            "role": "user",
+            "content": f"Question: {query}"
+        })
+
         try:
-            system_prompt = self.get_system_prompt()
-            
-            messages = [{"role": "system", "content": system_prompt}]
-            
-            if cached_pdf_message:
-                pdf_message = cached_pdf_message
-            elif previous_qa and len(previous_qa) > 0:
-                pdf_message = f"""SEC filing document (same as previous conversation):
-
-{pdf_text}"""
-            else:
-                pdf_message = f"""SEC filing document:
-
-{pdf_text}"""
-            
-            messages.append({"role": "user", "content": pdf_message})
-            
-            if previous_qa:
-                for qa in previous_qa[-5:]:
-                    messages.append({"role": "user", "content": f"Question: {qa['question']}"})
-                    messages.append({"role": "assistant", "content": qa['answer']})
-            
-            messages.append({"role": "user", "content": f"""Question: {question}
-
-Answer concisely and clearly. Search the entire document (financial statements, MD&A, footnotes, tables).
-
-When comparing to "last quarter" or "previous quarter", identify the current reporting period from the document and compare it to the immediately preceding quarter shown in the financial statements.
-
-Format:
-- Use headings (##) to organize longer answers with multiple topics
-- Use tables when helpful: comparisons, financial metrics across periods, ratios, structured data
-- Use bullet points (-) for simple lists or when tables aren't needed
-- Use **bold** for key numbers
-- Use <span style="color: green">green text</span> sparingly (1-3 times max) to highlight positive trends or strengths
-- Use <span style="color: red">red text</span> sparingly (1-3 times max) to highlight concerns or weaknesses
-- Choose the best format for each piece of information
-- Keep it short unless detailed analysis is needed
-
-If the answer isn't in the document, say so directly."""})
-            
-            print(f"Calling OpenAI API with streaming, {len(messages)} messages...")
             stream = self.client.chat.completions.create(
-                model="gpt-5-nano",
+                model="gpt-4o-mini",
                 messages=messages,
-                max_completion_tokens=100_000,
+                max_tokens=4000,
                 stream=True
             )
-            
-            full_answer = ""
+
             for chunk in stream:
                 if chunk.choices[0].delta.content is not None:
                     content = chunk.choices[0].delta.content
-                    full_answer += content
                     yield f"data: {content}\n\n"
-            
-            print(f"Streaming complete, total length: {len(full_answer)} characters")
+
             yield "data: [DONE]\n\n"
-            
+
         except Exception as e:
-            print(f"Error streaming from OpenAI: {e}")
-            import traceback
-            traceback.print_exc()
-            yield f"data: " + '{"error": "' + str(e) + '"}\n\n'
-    
-    def generate_report(self, pdf_text: str, ticker: str, stock_info: dict = None) -> Optional[str]:
+            print(f"Error streaming RAG response: {e}")
+            yield f'data: {{"error": "{str(e)}"}}\n\n'
+
+    def generate_report_rag(
+        self,
+        filing_metadata: Dict,
+        section_contexts: Dict[str, List[QueryResult]],
+        stock_info: Dict = None
+    ) -> Optional[str]:
+        """Generate comprehensive report using multiple section contexts"""
         if not self.client:
             return None
-        
-        if not pdf_text:
-            return None
-        
-        print(f"Generating comprehensive report for {ticker}, PDF text length: {len(pdf_text)} characters")
-        
-        try:
-            system_prompt = """You are a financial analyst creating investment reports from SEC quarterly filings (10-Q reports).
 
-Write in clear, simple language that's easy to understand. Avoid complex jargon. Explain technical terms when you first use them. Make the report accessible to readers with basic financial knowledge."""
-            
-            stock_context = ""
-            if stock_info:
-                market_cap = stock_info.get('marketCap')
-                market_cap_str = f"${market_cap:,.0f}" if market_cap else 'N/A'
-                stock_context = f"""
-Company Information:
-- Company Name: {stock_info.get('name', 'N/A')}
-- Ticker: {ticker}
+        stock_context = ""
+        if stock_info:
+            market_cap = stock_info.get('marketCap')
+            market_cap_str = f"${market_cap:,.0f}" if market_cap else 'N/A'
+            stock_context = f"""
+Current Market Information:
+- Company: {stock_info.get('name', 'N/A')}
+- Ticker: {filing_metadata.get('ticker', 'N/A')}
 - Current Price: ${stock_info.get('currentPrice', 'N/A')}
 - P/E Ratio: {stock_info.get('peRatio', 'N/A')}
 - Market Cap: {market_cap_str}
 - Sector: {stock_info.get('sector', 'N/A')}
 """
-            
-            prompt = f"""Analyze the complete 10-Q quarterly report for {ticker} and create a comprehensive investment report.
+
+        all_context = []
+        for section_name, chunks in section_contexts.items():
+            if chunks:
+                section_text = self._format_chunks_as_context(chunks)
+                all_context.append(f"## {section_name}\n{section_text}")
+
+        combined_context = "\n\n".join(all_context)
+
+        system_prompt = """You are a financial analyst creating investment reports from SEC quarterly filings.
+Write in clear, simple language. Explain technical terms. Make the report accessible to readers with basic financial knowledge."""
+
+        prompt = f"""Analyze the 10-Q filing for {filing_metadata.get('ticker', 'Unknown')} ({filing_metadata.get('fiscal_period', '')}) and create a comprehensive investment report.
 
 {stock_context}
 
-**ANALYSIS REQUIREMENTS:**
-Review the entire document: financial statements, MD&A, footnotes, risk factors, and all sections.
-- Don't hesitate to use values present in the file to perform calculations as needed (e.g., if total revenue is given for a quarter, calculate monthly averages; convert quarterly to annualized, derive per-share metrics from totals, calculate ratios from provided figures)
+**SEC Filing Context:**
+{combined_context}
 
 **REPORT STRUCTURE:**
 
 ## Executive Summary
-- Quarter performance overview
-- Key highlights
-- Overall financial health
+- Quarter performance overview and key highlights
 
 ## Financial Performance
-- Revenue (current vs previous quarter, vs same quarter last year)
-- Profitability (gross margin, operating margin, net margin)
-- Earnings per share (EPS)
-- Use tables when comparing metrics across multiple periods
-- Identify trends
+- Revenue, profitability, margins, EPS with comparisons
 
 ## Balance Sheet
-- Changes in assets, liabilities, equity
-- Working capital
-- Debt levels and ratios
-- Cash position
-- Use tables when comparing across periods or presenting structured data
+- Assets, liabilities, working capital, debt, cash position
 
 ## Cash Flow
-- Operating cash flow trends
-- Investing and financing activities
-- Free cash flow
-- Cash flow quality
-- Use tables when comparing across periods
+- Operating, investing, financing activities
 
 ## Key Financial Ratios
-- Liquidity ratios (Current ratio, Quick ratio)
-- Profitability ratios (ROE, ROA, margins)
-- Efficiency ratios (Asset turnover, Inventory turnover)
-- Leverage ratios (Debt-to-equity, Debt-to-assets)
-- Present in tables when comparing across periods
-
-## Operational Highlights
-- Key business developments
-- Segment performance (if available) - use tables if multiple segments with data
-- Strategic initiatives
+- Liquidity, profitability, leverage ratios
 
 ## Risk Assessment
-- Financial, operational, market, and regulatory risks from the filing
+- Key risks from the filing
 
 ## Outlook
-- Management guidance
-- Forward-looking statements
-- Expected trends and challenges
+- Management guidance and forward-looking statements
 
 ## Investment Recommendation
 Choose ONE: **STRONG BUY**, **BUY**, **SELL**, or **STRONG SELL**
-
-Justify with:
-- Key supporting factors
-- Risk considerations
-- Valuation notes (if data supports)
-- Time horizon
+Justify with supporting factors.
 
 **FORMATTING:**
-- Use markdown (## headings, bullet points, **bold** for numbers)
-- Use headings (##) to organize sections - don't overuse them
-- Use tables when they add clarity: comparisons across periods, financial metrics, ratios, structured data with multiple values
-- Use bullet points for simple lists or when tables aren't needed
-- Use <span style="color: green">green text</span> sparingly (2-5 times max) to highlight positive trends, improvements, or strengths
-- Use <span style="color: red">red text</span> sparingly (2-5 times max) to highlight concerns, declines, or weaknesses
-- Choose the best format for each piece of information
-- Include specific numbers and dates
-- Keep language clear and simple
-- Explain technical terms when first used
-- If data is missing, state it clearly
+- Use markdown headings, bullet points, tables where helpful
+- Bold key numbers
+- Use colors sparingly for trends"""
 
-**DOCUMENT:**
-{pdf_text}
+        try:
+            print(f"Generating RAG report for {filing_metadata.get('ticker')}")
 
-Generate the report following this structure."""
-            
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt}
-            ]
-            
-            print(f"Calling OpenAI API for report generation with {len(messages)} messages...")
             response = self.client.chat.completions.create(
-                model="gpt-5-nano",
-                messages=messages,
-                max_completion_tokens=100_000
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=8000
             )
-            
+
             report = response.choices[0].message.content
-            print(f"Report generated successfully, length: {len(report)} characters")
-            print(f"Report preview: {report[:300]}")
-            
+            print(f"Report generated: {len(report)} characters")
             return report
+
         except Exception as e:
             print(f"Error generating report: {e}")
             import traceback
             traceback.print_exc()
             return None
 
-llm_service = LLMService()
 
+llm_service = LLMService()

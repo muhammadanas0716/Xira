@@ -2,8 +2,10 @@
     class="w-64 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 overflow-hidden">
     <div class="p-6 fade-in flex items-center justify-between border-b border-gray-100">
         <div class="flex items-center gap-3">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Xira Logo" class="w-8 h-8 logo-img rounded-lg">
-            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Xira</h1>
+            <svg class="w-8 h-8 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Fira</h1>
         </div>
         <button onclick="toggleSidebar()"
             class="sidebar-toggle p-2 rounded-lg text-gray-400 hover:text-gray-600">
@@ -20,49 +22,15 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
-                <span>Analyze Stock</span>
+                <span>Analyze Filing</span>
             </div>
-            <span class="text-xs text-gray-400 font-normal" id="shortcutHint"></span>
         </button>
-    </div>
-
-    <div class="px-4 mb-4 fade-in">
-        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">QUICK ACTIONS</h2>
-        <nav class="space-y-1">
-            <a href="#"
-                class="sidebar-item flex items-center gap-3 py-2.5 px-3 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
-                    </path>
-                </svg>
-                <span class="font-medium">Generate Report</span>
-            </a>
-            <a href="#"
-                class="sidebar-item flex items-center gap-3 py-2.5 px-3 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                    </path>
-                </svg>
-                <span class="font-medium">SEC Filings</span>
-            </a>
-            <a href="#"
-                class="sidebar-item flex items-center gap-3 py-2.5 px-3 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M13 10V3L4 14h7v7l9-11h-7z">
-                    </path>
-                </svg>
-                <span class="font-medium">Stock Analysis</span>
-            </a>
-        </nav>
     </div>
 
     <div class="px-4 mb-4 fade-in flex-1 overflow-y-auto scrollbar-hide">
         <div class="flex items-center justify-between mb-3 group">
             <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider">RECENT ANALYSES</h2>
-            <button onclick="deleteAllChats()" 
+            <button onclick="deleteAllChats()"
                 class="text-xs text-red-600 hover:text-red-700 font-medium transition-colors opacity-70 hover:opacity-100"
                 title="Delete all chats">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -78,16 +46,20 @@
         <div class="bg-gray-50 border border-gray-200 rounded-xl p-3 mb-3">
             <div class="flex items-center gap-2 mb-2">
                 <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                 </svg>
-                <span class="text-xs font-semibold text-gray-700">BETA</span>
+                <span id="userEmail" class="text-xs font-medium text-gray-700 truncate"></span>
             </div>
-            <p class="text-xs text-gray-600 leading-relaxed">AI-powered financial analysis. Results may vary.</p>
+            <button onclick="logout()" class="text-xs text-red-600 hover:text-red-700 font-medium">
+                Sign Out
+            </button>
         </div>
-        <div class="flex flex-col gap-2 mt-3">
-            <a href="{{ url_for('main.terms') }}" class="text-xs text-gray-500 hover:text-gray-700 transition-colors">TERMS</a>
-            <a href="{{ url_for('main.privacy') }}" class="text-xs text-gray-500 hover:text-gray-700 transition-colors">PRIVACY</a>
+        <div class="flex gap-4 mt-3">
+            <a href="{{ url_for('main.terms') }}" class="text-xs text-gray-500 hover:text-gray-700 transition-colors">Terms</a>
+            <a href="{{ url_for('main.privacy') }}" class="text-xs text-gray-500 hover:text-gray-700 transition-colors">Privacy</a>
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('admin.admin_page') }}" class="text-xs text-gray-500 hover:text-gray-700 transition-colors">Admin</a>
+            {% endif %}
         </div>
     </div>
 </aside>
-

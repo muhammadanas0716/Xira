@@ -1,72 +1,33 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% if show_pin_modal %}
-<div id="pinModalOverlay" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-md z-[9999] flex items-center justify-center" style="pointer-events: auto !important;">
-    <div id="pinModal" class="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl" style="pointer-events: auto !important;">
-        <div class="flex items-center justify-between mb-6">
-            <h3 class="text-2xl font-bold text-gray-900">Dashboard Access</h3>
-        </div>
-        <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-700 mb-3">Enter PIN to access dashboard</label>
-            <input 
-                id="pinInput"
-                type="password" 
-                placeholder="Enter PIN" 
-                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-center text-2xl tracking-widest font-mono"
-                maxlength="20"
-                autocomplete="off"
-                style="pointer-events: auto !important;"
-            >
-            <p id="pinError" class="mt-3 text-sm text-red-600 hidden"></p>
-        </div>
-        <button 
-            id="pinSubmitBtn"
-            onclick="validatePin()" 
-            class="w-full bg-black hover:bg-gray-800 text-white font-semibold py-3 px-4 rounded-xl transition-all"
-            style="pointer-events: auto !important;"
-        >
-            Access Dashboard
-        </button>
-    </div>
-</div>
-<style>
-    {% if show_pin_modal %}
-    body > *:not(#pinModalOverlay) {
-        pointer-events: none !important;
-        user-select: none !important;
-    }
-    {% endif %}
-</style>
-{% endif %}
-
-<div id="dashboardContent" class="flex-1 overflow-y-auto p-8 scrollbar-hide {% if show_pin_modal %}hidden{% endif %}">
+<div id="dashboardContent" class="flex-1 overflow-y-auto p-8 scrollbar-hide">
     <div id="emptyState" class="max-w-2xl mx-auto fade-in flex flex-col items-center justify-center h-full text-center">
         <div class="mb-8">
             <svg class="w-24 h-24 mx-auto text-gray-300 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
             </svg>
-            <h2 class="text-3xl font-bold text-gray-900 mb-3">No Chat Selected</h2>
-            <p class="text-lg text-gray-600 mb-8">Create a new chat to start analyzing stock tickers and SEC filings</p>
+            <h2 class="text-3xl font-bold text-gray-900 mb-3">Welcome to Fira</h2>
+            <p class="text-lg text-gray-600 mb-8">Analyze SEC filings with AI-powered insights</p>
             <button onclick="openNewChatModal()" class="bg-black hover:bg-gray-800 text-white font-semibold py-3 px-8 rounded-xl transition-all flex items-center gap-2 mx-auto">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
-                <span>Create New Chat</span>
+                <span>Analyze a Filing</span>
             </button>
         </div>
     </div>
     <div id="chatContentContainer" class="hidden"></div>
 </div>
 
-<div id="dashboardFooter" class="border-t border-gray-200 p-4 bg-white shadow-lg hidden {% if show_pin_modal %}hidden{% endif %}">
+<div id="dashboardFooter" class="border-t border-gray-200 p-4 bg-white shadow-lg hidden">
     <div class="max-w-4xl mx-auto relative">
-        <input type="text" placeholder="Search or ask any question..."
+        <input type="text" id="questionInput" placeholder="Ask a question about the SEC filing..."
             class="w-full pl-12 pr-16 py-3.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent input-focus shadow-sm">
         <svg class="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" fill="none"
             stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
         </svg>
         <button id="sendButton" onclick="askQuestion()"
             class="absolute right-3 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black hover:bg-gray-800 text-white rounded-xl flex items-center justify-center transition-all btn-primary shadow-md">
@@ -81,146 +42,10 @@
 
 {% block extra_scripts %}
 <script>
-(function() {
-    const pinInput = document.getElementById('pinInput');
-    const pinModal = document.getElementById('pinModal');
-    const pinModalOverlay = document.getElementById('pinModalOverlay');
-    const dashboardContent = document.getElementById('dashboardContent');
-    const dashboardFooter = document.getElementById('dashboardFooter');
-    
-    function validatePin() {
-        const pin = pinInput.value.trim();
-        const errorMsg = document.getElementById('pinError');
-        const submitBtn = document.getElementById('pinSubmitBtn');
-        
-        if (!pin) {
-            errorMsg.textContent = 'Please enter a PIN';
-            errorMsg.classList.remove('hidden');
-            return;
-        }
-        
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Validating...';
-        errorMsg.classList.add('hidden');
-        
-        fetch('/api/validate-dashboard-pin', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify({ pin: pin })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                if (pinModalOverlay) pinModalOverlay.remove();
-                if (pinModal) pinModal.remove();
-                if (dashboardContent) dashboardContent.classList.remove('hidden');
-                if (dashboardFooter) dashboardFooter.classList.remove('hidden');
-                window.location.reload();
-            } else {
-                errorMsg.textContent = data.error || 'Invalid PIN';
-                errorMsg.classList.remove('hidden');
-                pinInput.value = '';
-                pinInput.focus();
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Access Dashboard';
-            }
-        })
-        .catch(error => {
-            errorMsg.textContent = 'Error validating PIN. Please try again.';
-            errorMsg.classList.remove('hidden');
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Access Dashboard';
-        });
-    }
-    
-    window.validatePin = validatePin;
-    
-    if (pinInput) {
-        pinInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                validatePin();
-            }
-        });
-        
-        pinInput.addEventListener('input', function() {
-            document.getElementById('pinError').classList.add('hidden');
-        });
-        
-        pinInput.focus();
-        
-        if (pinModalOverlay) {
-            pinModalOverlay.addEventListener('click', function(e) {
-                if (e.target === pinModalOverlay) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-            });
-        }
-    }
-    
-    Object.defineProperty(window, 'validatePin', {
-        value: validatePin,
-        writable: false,
-        configurable: false
-    });
-    
-    if (pinInput) {
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-                    if (pinInput.style.display === 'none' || pinInput.offsetParent === null) {
-                        pinInput.style.display = '';
-                    }
-                }
-            });
-        });
-        observer.observe(pinInput, { attributes: true, attributeFilter: ['style'] });
-        
-        const overlayObserver = new MutationObserver(function(mutations) {
-            if (pinModalOverlay && !document.body.contains(pinModalOverlay)) {
-                window.location.reload();
-            }
-        });
-        if (pinModalOverlay) {
-            overlayObserver.observe(document.body, { childList: true, subtree: true });
-        }
-    }
-    
-    if (pinModalOverlay) {
-        setInterval(function() {
-            if (!document.body.contains(pinModalOverlay) && !sessionStorage.getItem('dashboard_authenticated')) {
-                window.location.reload();
-            }
-        }, 1000);
-    }
-    
-    Object.freeze(window.validatePin);
-    
-    if (pinModalOverlay) {
-        const preventRemoval = setInterval(function() {
-            if (!document.body.contains(pinModalOverlay)) {
-                clearInterval(preventRemoval);
-                window.location.reload();
-            }
-        }, 500);
-    }
-})();
-</script>
-{% if pdfs %}
-<script>
-    window.addEventListener('load', function () {
-        const firstPdf = '{{ pdfs[0] }}';
-        if (firstPdf) {
-            const tickerInput = document.getElementById('tickerInput');
-            if (tickerInput) {
-                tickerInput.value = firstPdf.replace('_latest_10Q.pdf', '');
-            }
-            loadPdfFromUrl(`/pdfs/${firstPdf}`);
+    document.getElementById('questionInput')?.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            askQuestion();
         }
     });
 </script>
-{% endif %}
 {% endblock %}

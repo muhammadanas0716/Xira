@@ -2,52 +2,7 @@ let currentPage = 1;
 let totalPages = 1;
 let currentMessage = null;
 
-async function validatePin() {
-    const pinInput = document.getElementById('pinInput');
-    const pinError = document.getElementById('pinError');
-    const pin = pinInput.value.trim();
-
-    if (!pin) {
-        pinError.textContent = 'Please enter a PIN';
-        pinError.classList.remove('hidden');
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/admin/validate-pin', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            credentials: 'include',
-            body: JSON.stringify({ pin })
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-            window.location.reload();
-        } else {
-            pinError.textContent = data.error || 'Invalid PIN';
-            pinError.classList.remove('hidden');
-            pinInput.value = '';
-        }
-    } catch (error) {
-        pinError.textContent = 'Error validating PIN';
-        pinError.classList.remove('hidden');
-    }
-}
-
 document.addEventListener('DOMContentLoaded', function() {
-    const pinInput = document.getElementById('pinInput');
-    if (pinInput) {
-        pinInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                validatePin();
-            }
-        });
-    }
-
     const messageModal = document.getElementById('messageModal');
     if (messageModal) {
         messageModal.addEventListener('click', function(e) {

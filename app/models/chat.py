@@ -1,61 +1,87 @@
 from datetime import datetime
 from typing import Dict, List, Optional
 from app import db
-from sqlalchemy import JSON, Text, ForeignKey, Date, String
+from sqlalchemy import JSON, Text, ForeignKey, Date, String, Boolean, Integer
 from sqlalchemy.orm import relationship
 import uuid
 
-class TickerPDF(db.Model):
-    __tablename__ = 'ticker_pdfs'
-    
-    ticker = db.Column(db.String(10), primary_key=True)
-    filing_date = db.Column(Date, primary_key=True)
-    pdf_text = db.Column(Text, nullable=False)
-    pdf_filename = db.Column(db.String(255))
-    filed_at = db.Column(db.DateTime)
-    period_end_date = db.Column(Date)
-    accession_number = db.Column(db.String(50))
+
+class SECFiling(db.Model):
+    __tablename__ = 'sec_filings'
+
+    id = db.Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    ticker = db.Column(db.String(10), nullable=False, index=True)
+    form_type = db.Column(db.String(10), nullable=False, default='10-Q')
+    fiscal_year = db.Column(Integer, nullable=False)
+    fiscal_quarter = db.Column(Integer, nullable=True)
+    filing_date = db.Column(Date, nullable=False, index=True)
+    period_end_date = db.Column(Date, nullable=True)
+    accession_number = db.Column(db.String(50), unique=True, nullable=False)
+    filing_url = db.Column(db.String(500), nullable=True)
+    pdf_filename = db.Column(db.String(255), nullable=True)
+
+    total_chunks = db.Column(Integer, default=0)
+    pinecone_namespace = db.Column(db.String(100), nullable=True)
+    is_embedded = db.Column(Boolean, default=False, nullable=False)
+    embedded_at = db.Column(db.DateTime, nullable=True)
+
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-class Chat(db.Model):
-    __tablename__ = 'chats'
-    
-    id = db.Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    ticker = db.Column(db.String(10), nullable=False, index=True)
-    filing_date = db.Column(Date, nullable=True, index=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
-    stock_info = db.Column(JSON, nullable=False)
-    generated_report = db.Column(Text)
-    report_generated_at = db.Column(db.DateTime)
-    
-    messages = db.relationship('Message', backref='chat', lazy=True, cascade='all, delete-orphan', order_by='Message.created_at')
-    
+    chats = relationship('Chat', backref='filing', lazy='dynamic')
+
     def to_dict(self) -> Dict:
         return {
             'id': self.id,
             'ticker': self.ticker,
+            'form_type': self.form_type,
+            'fiscal_year': self.fiscal_year,
+            'fiscal_quarter': self.fiscal_quarter,
+            'fiscal_period': f"FY{self.fiscal_year} Q{self.fiscal_quarter}" if self.fiscal_quarter else f"FY{self.fiscal_year}",
             'filing_date': self.filing_date.isoformat() if self.filing_date else None,
+            'period_end_date': self.period_end_date.isoformat() if self.period_end_date else None,
+            'accession_number': self.accession_number,
+            'is_embedded': self.is_embedded,
+            'total_chunks': self.total_chunks,
+            'embedded_at': self.embedded_at.isoformat() if self.embedded_at else None
+        }
+
+    def get_namespace(self) -> str:
+        if self.pinecone_namespace:
+            return self.pinecone_namespace
+        clean_accession = self.accession_number.replace('-', '')
+        self.pinecone_namespace = f"{self.ticker}_{clean_accession}"
+        return self.pinecone_namespace
+
+
+class Chat(db.Model):
+    __tablename__ = 'chats'
+
+    id = db.Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(String(36), db.ForeignKey('users.id'), nullable=False, index=True)
+    filing_id = db.Column(String(36), db.ForeignKey('sec_filings.id'), nullable=False, index=True)
+    ticker = db.Column(db.String(10), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+    stock_info = db.Column(JSON, nullable=True)
+    generated_report = db.Column(Text, nullable=True)
+    report_generated_at = db.Column(db.DateTime, nullable=True)
+
+    messages = relationship('Message', backref='chat', lazy=True, cascade='all, delete-orphan', order_by='Message.created_at')
+
+    def to_dict(self) -> Dict:
+        filing = self.filing
+        return {
+            'id': self.id,
+            'ticker': self.ticker,
+            'filing': filing.to_dict() if filing else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'stock_info': self.stock_info,
-            'pdf_text': self.pdf_text,
             'messages': [msg.to_dict() for msg in self.messages],
             'has_report': self.generated_report is not None,
             'report_generated_at': self.report_generated_at.isoformat() if self.report_generated_at else None
         }
-    
-    @property
-    def ticker_pdf(self):
-        if not self.ticker or not self.filing_date:
-            return None
-        return TickerPDF.query.filter_by(ticker=self.ticker, filing_date=self.filing_date).first()
-    
-    @property
-    def pdf_text(self) -> Optional[str]:
-        ticker_pdf = self.ticker_pdf
-        return ticker_pdf.pdf_text if ticker_pdf else None
-    
-    def add_message(self, question: str, answer: str):
+
+    def add_message(self, question: str, answer: str) -> 'Message':
         message = Message(
             chat_id=self.id,
             question=question,
@@ -64,43 +90,30 @@ class Chat(db.Model):
         db.session.add(message)
         db.session.commit()
         return message
-    
-    def set_report(self, report: str):
+
+    def set_report(self, report: str) -> None:
         self.generated_report = report
         self.report_generated_at = datetime.utcnow()
         db.session.commit()
-    
-    def get_pdf_message(self, is_continuation: bool = False) -> Optional[str]:
-        pdf_text = self.pdf_text
-        if not pdf_text:
-            return None
-        
-        context = ""
-        ticker_pdf = self.ticker_pdf
-        if ticker_pdf and ticker_pdf.period_end_date:
-            context = f"\n\nReporting period end date: {ticker_pdf.period_end_date.isoformat()}\n"
-        
-        if is_continuation:
-            return f"""SEC filing document (same as previous conversation):{context}
 
-{pdf_text}"""
-        else:
-            return f"""SEC filing document:{context}
-
-{pdf_text}"""
+    def get_conversation_history(self, limit: int = 10) -> List[Dict]:
+        recent_messages = self.messages[-limit:] if len(self.messages) > limit else self.messages
+        return [{'question': msg.question, 'answer': msg.answer} for msg in recent_messages]
 
 
 class Message(db.Model):
     __tablename__ = 'messages'
-    
+
     id = db.Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     chat_id = db.Column(String(36), db.ForeignKey('chats.id', ondelete='CASCADE'), nullable=False, index=True)
     question = db.Column(Text, nullable=False)
     answer = db.Column(Text, nullable=False)
+    retrieved_chunks = db.Column(JSON, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
-    
+
     def to_dict(self) -> Dict:
         return {
+            'id': self.id,
             'question': self.question,
             'answer': self.answer,
             'timestamp': self.created_at.isoformat() if self.created_at else None

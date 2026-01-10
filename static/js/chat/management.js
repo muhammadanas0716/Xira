@@ -2,7 +2,9 @@ let currentChatId = null;
 
 async function loadChat(chatId) {
   try {
-    const response = await fetch(`/api/chats/${chatId}`);
+    const response = await fetch(`/api/chats/${chatId}`, {
+      credentials: 'include'
+    });
     const chat = await response.json();
 
     if (response.ok) {
@@ -13,31 +15,46 @@ async function loadChat(chatId) {
           loadPdfFromUrl(`/pdfs/${chat.pdf_filename}`);
         }, 100);
       }
+      loadChatHistory();
     }
   } catch (error) {
+    console.error('Error loading chat:', error);
   }
 }
 
 async function loadChatHistory() {
   try {
-    const response = await fetch("/api/chats");
+    const response = await fetch("/api/chats", {
+      credentials: 'include'
+    });
     const chats = await response.json();
     const historyDiv = document.getElementById("chatHistory");
+
+    if (!historyDiv) return;
+
+    if (chats.length === 0) {
+      historyDiv.innerHTML = '<p class="text-sm text-gray-500 px-3 py-2">No analyses yet</p>';
+      return;
+    }
 
     historyDiv.innerHTML = chats
       .map(
         (chat) => {
           const safeId = sanitizeChatId(chat.id) || '';
           const safeTicker = escapeHtml(chat.ticker || '');
+          const fiscalPeriod = chat.fiscal_period ? escapeHtml(chat.fiscal_period) : '';
           const isActive = currentChatId === chat.id;
           return `
             <div class="history-item group flex items-center gap-2 py-2.5 px-3 rounded-xl cursor-pointer hover:bg-gray-50 ${isActive ? 'bg-gray-100' : ''}" onclick="loadChat('${safeId}')">
                 <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-                <span class="text-sm text-gray-700 truncate flex-1">${safeTicker}</span>
-                <button 
-                    onclick="event.stopPropagation(); deleteChat('${safeId}', '${safeTicker}')" 
+                <div class="flex-1 min-w-0">
+                    <span class="text-sm font-medium text-gray-700 block truncate">${safeTicker}</span>
+                    ${fiscalPeriod ? `<span class="text-xs text-gray-500 block truncate">${fiscalPeriod}</span>` : ''}
+                </div>
+                <button
+                    onclick="event.stopPropagation(); deleteChat('${safeId}', '${safeTicker}')"
                     class="delete-chat-btn opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-100 text-red-500 hover:text-red-700 flex-shrink-0"
                     title="Delete chat"
                 >
@@ -51,6 +68,7 @@ async function loadChatHistory() {
       )
       .join("");
   } catch (error) {
+    console.error('Error loading chat history:', error);
   }
 }
 
@@ -63,6 +81,7 @@ async function deleteChat(chatId, ticker) {
     const response = await fetch(`/api/chats/${chatId}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
+      credentials: 'include'
     });
 
     const data = await response.json();
@@ -99,6 +118,7 @@ async function deleteAllChats() {
     const response = await fetch("/api/chats", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
+      credentials: 'include'
     });
 
     const data = await response.json();
