@@ -76,7 +76,7 @@ export default function DashboardPage() {
                     {chats === undefined ? (
                       <Skeleton className="h-8 w-16" />
                     ) : (
-                      new Set(chats.map((c) => c.filingId)).size
+                      new Set((chats as Chat[]).map((c: Chat) => c.filingId)).size
                     )}
                   </p>
                 </div>
@@ -96,7 +96,7 @@ export default function DashboardPage() {
                     {chats === undefined ? (
                       <Skeleton className="h-8 w-16" />
                     ) : (
-                      new Set(chats.map((c) => c.ticker)).size
+                      new Set((chats as Chat[]).map((c: Chat) => c.ticker)).size
                     )}
                   </p>
                 </div>
@@ -126,7 +126,7 @@ export default function DashboardPage() {
                 </div>
               ) : recentChats.length > 0 ? (
                 <div className="space-y-3">
-                  {recentChats.map((chat) => (
+                  {(recentChats as Chat[]).map((chat: Chat) => (
                     <Link key={chat._id} href={`/chat/${chat._id}`}>
                       <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors group">
                         <div className="flex items-center gap-3">

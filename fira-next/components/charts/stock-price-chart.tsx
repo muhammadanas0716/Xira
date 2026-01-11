@@ -104,7 +104,7 @@ export function StockPriceChart({
                 borderRadius: "8px",
               }}
               labelStyle={{ color: "#e5e7eb" }}
-              formatter={(value: number) => [`$${value.toFixed(2)}`, "Price"]}
+              formatter={(value) => [`$${(value as number).toFixed(2)}`, "Price"]}
             />
             <Area
               type="monotone"

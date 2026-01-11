@@ -6,7 +6,15 @@ import { usePathname } from "next/navigation";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
+
+// Type definitions
+type Chat = {
+  _id: Id<"chats">;
+  ticker: string;
+  createdAt: number;
+};
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -153,7 +161,7 @@ export function Sidebar({ onNewChat }: SidebarProps) {
             </div>
           )}
           <ScrollArea className="h-full px-3">
-            {chats?.map((chat) => (
+            {(chats as Chat[] | undefined)?.map((chat: Chat) => (
               <Tooltip key={chat._id}>
                 <TooltipTrigger asChild>
                   <Link href={`/chat/${chat._id}`}>

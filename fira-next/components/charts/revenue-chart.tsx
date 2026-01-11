@@ -57,7 +57,7 @@ export function RevenueChart({ data, title = "Revenue & Net Income" }: RevenueCh
                 borderRadius: "8px",
               }}
               labelStyle={{ color: "#e5e7eb" }}
-              formatter={(value: number) => [formatValue(value), ""]}
+              formatter={(value) => [formatValue(value as number), ""]}
             />
             <Legend
               wrapperStyle={{ color: "#e5e7eb" }}
