@@ -1,173 +1,165 @@
-# Xira - Financial Research Assistant
+# Fira - SEC Filing Intelligence Platform
 
+A modern, real-time SEC filing analysis platform built with Next.js, Convex, and AI-powered RAG (Retrieval-Augmented Generation).
 
-<img width="3508" height="2344" alt="image" src="https://github.com/user-attachments/assets/1f37fb6c-5782-4032-a885-d0c96d31e937" />
+## Features
 
+- **SEC Filing Analysis**: Analyze 10-K, 10-Q, and 8-K filings with AI-powered insights
+- **Intelligent Chat**: Ask questions about any filing and get accurate, sourced answers
+- **Real-time Updates**: Live message streaming and instant data sync with Convex
+- **Financial Metrics**: Real-time stock data and charts
+- **Dark Finance Theme**: Bloomberg Terminal-inspired UI design
+- **Admin Dashboard**: Manage users, invite codes, and monitor system activity
 
-A Flask-based web application for analyzing stock tickers, downloading SEC 10-Q reports, and asking questions about them using AI.
+## Tech Stack
+
+- **Frontend**: Next.js 16.1.1, React 19, TypeScript
+- **Backend**: Convex (real-time database, vector search, serverless functions)
+- **Authentication**: Clerk
+- **UI Components**: shadcn/ui, Tailwind CSS
+- **Charts**: Recharts
+- **AI**: OpenAI GPT-4o-mini for RAG, Voyage AI for embeddings
 
 ## Project Structure
 
 ```
-Xira 2.0/
-├── app/
-│   ├── __init__.py          # Flask app factory
-│   ├── routes/              # Route handlers
-│   │   ├── main.py         # Main routes (home, PDF serving)
-│   │   └── api.py          # API endpoints
-│   ├── services/           # Business logic services
-│   │   ├── sec_service.py  # SEC API integration
-│   │   ├── stock_service.py # Stock data (yfinance)
-│   │   ├── pdf_service.py  # PDF text extraction
-│   │   └── llm_service.py  # OpenAI LLM integration
-│   ├── models/             # Data models
-│   │   └── chat.py        # Chat model and storage
-│   └── utils/              # Utilities
-│       └── config.py      # Configuration
-├── templates/              # HTML templates
-│   └── index.html
-├── static/                 # Static files (CSS, JS, images)
-├── downloads/              # Downloaded PDFs
-├── config/                 # Configuration files
-├── run.py                  # Application entry point
-├── requirements.txt        # Python dependencies
-└── .env.example           # Environment variables template
+fira-next/
+├── app/                          # Next.js App Router
+│   ├── (auth)/                   # Auth pages (sign-in, sign-up)
+│   ├── (dashboard)/              # Protected routes
+│   │   ├── page.tsx              # Main dashboard
+│   │   ├── chat/[chatId]/        # Chat view
+│   │   └── admin/                # Admin dashboard
+│   ├── api/                      # API routes
+│   │   ├── sec/                  # SEC filing APIs
+│   │   └── chat/                 # Chat/RAG API
+│   ├── layout.tsx                # Root layout
+│   └── page.tsx                  # Landing page
+├── components/
+│   ├── ui/                       # shadcn/ui components
+│   ├── layout/                   # Sidebar, Filing selector
+│   └── charts/                   # Stock charts (Recharts)
+├── convex/                       # Convex backend
+│   ├── schema.ts                 # Database schema
+│   ├── users.ts                  # User functions
+│   ├── chats.ts                  # Chat functions
+│   ├── messages.ts               # Message functions
+│   ├── filings.ts                # Filing functions
+│   ├── vectorSearch.ts           # Vector search
+│   └── inviteCodes.ts            # Invite code management
+├── lib/
+│   └── utils.ts                  # Utility functions
+└── middleware.ts                 # Clerk auth middleware
 ```
 
-## Setup
+## Getting Started
 
-1. **Install dependencies:**
+### Prerequisites
+
+- Node.js 18+
+- npm or yarn
+- Convex account
+- Clerk account
+- OpenAI API key
+
+### Installation
+
+1. **Navigate to the project:**
    ```bash
-   pip install -r requirements.txt
+   cd fira-next
    ```
 
-2. **Configure environment variables:**
+2. **Install dependencies:**
    ```bash
-   cp .env.example .env
-   ```
-   
-   Edit `.env` and add your API keys:
-   ```
-   SEC_API_KEY=your_sec_api_key
-   OPENAI_API_KEY=your_openai_api_key
-   SECRET_KEY=your_secret_key
-   DOWNLOADS_DIR=downloads
+   npm install
    ```
 
-3. **Run the application:**
+3. **Set up environment variables:**
    ```bash
-   python run.py
+   cp .env.local.example .env.local
    ```
 
-4. **Access the application:**
-   Open your browser and go to `http://localhost:5000`
+   Edit `.env.local` with your credentials:
+   ```
+   # Clerk
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+   CLERK_SECRET_KEY=sk_test_...
 
-## Features
+   # Convex
+   NEXT_PUBLIC_CONVEX_URL=https://your-project.convex.cloud
 
-- **Stock Information**: Fetch real-time stock data using yfinance
-- **SEC Filings**: Download latest 10-Q quarterly reports
-- **PDF Analysis**: Extract text from PDFs and ask questions using AI
-- **Chat System**: Create chats for each ticker with conversation history
+   # OpenAI
+   OPENAI_API_KEY=sk-...
 
-## API Endpoints
+   # Optional: Voyage AI for embeddings
+   VOYAGE_API_KEY=...
 
-- `GET /` - Main page
-- `GET /pdfs/<filename>` - Serve PDF files
-- `POST /api/create-chat` - Create a new chat for a ticker
-- `GET /api/chats` - List all chats
-- `GET /api/chats/<chat_id>` - Get specific chat
-- `POST /api/chats/<chat_id>/ask` - Ask a question about the PDF
-- `POST /api/download-pdf` - Download PDF for a ticker
+   # Optional: Polygon for stock data
+   POLYGON_API_KEY=...
+   ```
 
-## Technologies
+4. **Set up Convex:**
+   ```bash
+   npx convex dev
+   ```
 
-- Flask - Web framework
-- yfinance - Stock data
-- sec-api - SEC filings
-- OpenAI GPT-3.5 - LLM for Q&A
-- pdfplumber - PDF text extraction
-- Tailwind CSS - Styling
+5. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
+
+6. **Open the application:**
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key |
+| `CLERK_SECRET_KEY` | Yes | Clerk secret key |
+| `NEXT_PUBLIC_CONVEX_URL` | Yes | Convex deployment URL |
+| `OPENAI_API_KEY` | Yes | OpenAI API key for RAG |
+| `VOYAGE_API_KEY` | No | Voyage AI for embeddings |
+| `POLYGON_API_KEY` | No | Polygon for real-time stock data |
 
 ## Deployment
 
-### Using Docker
+### Vercel (Recommended)
 
-1. **Build the Docker image:**
-   ```bash
-   docker build -t xira-app .
-   ```
+1. Push to GitHub
+2. Import project in Vercel
+3. Add environment variables
+4. Deploy
 
-2. **Run the container:**
-   ```bash
-   docker run -d \
-     -p 5000:5000 \
-     -e SECRET_KEY=your-secret-key \
-     -e SEC_API_KEY=your-sec-api-key \
-     -e OPENAI_API_KEY=your-openai-api-key \
-     -e POLYGON_API_KEY=your-polygon-api-key \
-     -v $(pwd)/downloads:/app/downloads \
-     --name xira-app \
-     xira-app
-   ```
+### Convex
 
-### Using Docker Compose
+```bash
+npx convex deploy
+```
 
-1. **Create a `.env` file** with your environment variables:
-   ```
-   SECRET_KEY=your-secret-key-here-change-in-production
-   SEC_API_KEY=your-sec-api-key
-   OPENAI_API_KEY=your-openai-api-key
-   POLYGON_API_KEY=your-polygon-api-key
-   DOWNLOADS_DIR=downloads
-   ```
+## Features Overview
 
-2. **Start the application:**
-   ```bash
-   docker-compose up -d
-   ```
+### Landing Page
+- Modern dark finance theme
+- Feature highlights
+- Call-to-action sections
 
-3. **View logs:**
-   ```bash
-   docker-compose logs -f
-   ```
+### Dashboard
+- Recent chats overview
+- Quick stats (chats, filings, companies)
+- Quick start guide
 
-4. **Stop the application:**
-   ```bash
-   docker-compose down
-   ```
+### Chat Interface
+- Real-time message streaming
+- Markdown rendering
+- Stock price display
+- Filing metadata
 
-### Production Deployment
+### Admin Dashboard
+- User management (activate/deactivate, admin roles)
+- Invite code management
+- System statistics
 
-For production, use Gunicorn directly:
+## License
 
-1. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Set environment variables:**
-   ```bash
-   export SECRET_KEY=your-secret-key
-   export SEC_API_KEY=your-sec-api-key
-   export OPENAI_API_KEY=your-openai-api-key
-   export POLYGON_API_KEY=your-polygon-api-key
-   export PORT=5000
-   ```
-
-3. **Run with Gunicorn:**
-   ```bash
-   gunicorn -c gunicorn.conf.py run:app
-   ```
-
-### Environment Variables
-
-- `SECRET_KEY` - Flask secret key (required)
-- `SEC_API_KEY` - SEC API key (required)
-- `OPENAI_API_KEY` - OpenAI API key (required)
-- `POLYGON_API_KEY` - Polygon API key (required)
-- `DOWNLOADS_DIR` - Directory for downloaded PDFs (default: `downloads`)
-- `PORT` - Port to run the application on (default: `5000`)
-- `FLASK_DEBUG` - Enable debug mode (default: `False`)
-- `WORKERS` - Number of Gunicorn workers (default: auto-calculated)
-- `LOG_LEVEL` - Logging level (default: `info`)
-
+MIT
